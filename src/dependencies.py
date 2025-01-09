@@ -8,6 +8,7 @@ from src.auth.jwt_processor import JwtProcessor
 from src.db.database import get_db
 from src.password_hasher import PasswordHasher
 from src.repositories.log_repository import LogRepository
+from src.repositories.trader_repository import TraderRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.vendor_repository import VendorRepository
 
@@ -22,6 +23,10 @@ def get_vendor_repository(db: AsyncSession = Depends(get_db)) -> VendorRepositor
 
 def get_log_repository(db: AsyncSession = Depends(get_db)) -> LogRepository:
     return LogRepository(db)
+
+
+def get_trader_repository(db: AsyncSession = Depends(get_db)) -> TraderRepository:
+    return TraderRepository(db)
 
 
 @lru_cache

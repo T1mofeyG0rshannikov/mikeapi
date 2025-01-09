@@ -14,3 +14,7 @@ class APIServerError(Error):
 
 class VendorNotFoundError(Error):
     pass
+
+
+class NotPermittedError(Error):
+    pass

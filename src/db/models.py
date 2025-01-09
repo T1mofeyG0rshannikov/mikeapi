@@ -5,11 +5,13 @@ from sqlalchemy import (
     Column,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
     func,
 )
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 
 from src.db.database import Model
@@ -39,9 +41,9 @@ class APIURLSOrm(Model):
 
     id = Column(Integer, primary_key=True, index=True)
     main_url = Column(String)
-    main_url_status = Column(Enum(UrlEnum))
+    main_url_status = Column(Enum(UrlEnum, native_enum=False))
     reverse_url = Column(String)
-    reverse_url_status = Column(Enum(UrlEnum))
+    reverse_url_status = Column(Enum(UrlEnum, native_enum=False))
 
 
 class UserOrm(Model):
@@ -68,3 +70,20 @@ class LogOrm(Model):
     time = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     main_server = Column(Boolean)
+
+
+class TraderOrm(Model):
+    __tablename__ = "traders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String)
+    code = Column(String, unique=True)
+
+    status = Column(String)
+    subscribes = Column(Integer)
+    subscribers = Column(Integer)
+
+    portfolio = Column(Integer)
+    trades = Column(Integer)
+    profit = Column(Float)
+    badges = Column(ARRAY(String))

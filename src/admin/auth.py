@@ -25,12 +25,13 @@ class AdminAuth(AuthenticationBackend):
             return LoginResponse(ok=False, email_error_message=f"нет пользователя с email адресом {email}")
 
         if not user.is_superuser:
-            return LoginResponse(ok=False, email_error_message=f"Недостаточно прав для входа в панель администратора")
+            return LoginResponse(ok=False, email_error_message="Недостаточно прав для входа в панель администратора")
 
         if not self.password_hasher.verify(password, user.hash_password):
             return LoginResponse(ok=False, password_error_message="Неверный пароль")
 
         access_token = self.jwt_processor.create_access_token(user.email, user.id)
+        print(access_token)
         request.session.update({"token": access_token})
         return LoginResponse(ok=True)
 

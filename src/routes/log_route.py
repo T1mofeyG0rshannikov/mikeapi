@@ -55,7 +55,12 @@ async def create_log(
                 raise VendorNotFoundError(f"нет приложения с id '{data.app_id}'")
 
             if vendor.auth_token == data.auth_token:
-                # await log_repository.create(app=vendor, time=datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"), text=data.text, main_server=False)
+                await log_repository.create(
+                    app=vendor,
+                    time=datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"),
+                    text=data.text,
+                    main_server=False,
+                )
 
                 return APIResponse(
                     status="ok",

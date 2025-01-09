@@ -5,7 +5,6 @@ from pydantic import BaseModel, validator
 
 class CreateLogRequest(BaseModel):
     app_id: str
-    token: str
     time: str
     auth_token: str
     text: str

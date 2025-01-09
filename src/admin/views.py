@@ -1,7 +1,7 @@
 from sqladmin import ModelView
 
-from src.admin.forms import APIUrlsCreateForm, UserCreateForm, VendorCreateForm
-from src.db.models import APIURLSOrm, LogOrm, UrlEnum, UserOrm, VendorOrm
+from src.admin.forms import UserCreateForm, VendorCreateForm
+from src.db.models import APIURLSOrm, LogOrm, TraderOrm, UserOrm, VendorOrm
 
 
 class LogAdmin(ModelView, model=LogOrm):
@@ -9,6 +9,11 @@ class LogAdmin(ModelView, model=LogOrm):
 
     name = "Лог"
     name_plural = "Логи"
+
+    column_default_sort = ("created_at", True)
+    column_formatters = {LogOrm.created_at: lambda log, _: log.created_at.strftime("%d:%m:%Y.%H:%M:%S")}
+
+    page_size = 100
 
 
 class UserAdmin(ModelView, model=UserOrm):
@@ -36,3 +41,23 @@ class APIUrlsAdmin(ModelView, model=APIURLSOrm):
 
     name = "url адрес"
     name_plural = "url адреса"
+
+
+class TraderAdmin(ModelView, model=TraderOrm):
+    column_list = [
+        TraderOrm.id,
+        TraderOrm.username,
+        TraderOrm.code,
+        TraderOrm.status,
+        TraderOrm.subscribes,
+        TraderOrm.subscribers,
+        TraderOrm.portfolio,
+        TraderOrm.trades,
+        TraderOrm.profit,
+        TraderOrm.badges,
+    ]
+
+    list_template = "sqladmin/list.html"
+
+    name = "Трейдер"
+    name_plural = "Трейдеры"

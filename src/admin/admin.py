@@ -12,6 +12,7 @@ class CustomAdmin(Admin):
             return await self.templates.TemplateResponse(request, "sqladmin/login.html")
 
         response = await self.authentication_backend.login(request)
+        print(response)
         if not response.ok:
             context["email_error_message"] = response.email_error_message
             context["password_error_message"] = response.password_error_message
