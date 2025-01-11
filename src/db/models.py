@@ -56,7 +56,31 @@ class UserOrm(Model):
     is_superuser = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
+        return self.username
+
+
+class TraderOrm(Model):
+    __tablename__ = "traders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True)
+    code = Column(String, unique=True)
+
+    status = Column(String, nullable=True)
+    subscribes = Column(Integer, nullable=True)
+    subscribers = Column(Integer, nullable=True)
+
+    portfolio = Column(Integer, nullable=True)
+    trades = Column(Integer, nullable=True)
+    profit = Column(Float, nullable=True)
+    badges = Column(ARRAY(String), nullable=True)
+
+    watch = Column(String, server_default="new")
+
+    logs = relationship("LogOrm", back_populates="user")
+
+    def __str__(self) -> str:
         return self.username
 
 
@@ -69,21 +93,10 @@ class LogOrm(Model):
     text = Column(String)
     time = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
+    user_id = Column(Integer, ForeignKey("traders.id"))
+    user = relationship(TraderOrm, back_populates="")
     main_server = Column(Boolean)
-
-
-class TraderOrm(Model):
-    __tablename__ = "traders"
-
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String)
-    code = Column(String, unique=True)
-
-    status = Column(String)
-    subscribes = Column(Integer)
-    subscribers = Column(Integer)
-
-    portfolio = Column(Integer)
-    trades = Column(Integer)
-    profit = Column(Float)
-    badges = Column(ARRAY(String))
+    price = Column(Float)
+    currency = Column(String)
+    operation = Column(String)
+    ticker = Column(String)
