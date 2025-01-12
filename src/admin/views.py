@@ -72,6 +72,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
         TraderOrm.profit,
         TraderOrm.badges,
         TraderOrm.watch,
+        TraderOrm.count,
     ]
 
     list_template = "sqladmin/list-traders.html"

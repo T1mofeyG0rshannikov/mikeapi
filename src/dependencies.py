@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.jwt_config import JwtConfig, get_jwt_config
 from src.auth.jwt_processor import JwtProcessor
+from src.create_traders import CreateTraders
+from src.create_usernames import AddUsernames
 from src.db.database import get_db
 from src.password_hasher import PasswordHasher
 from src.repositories.log_repository import LogRepository
@@ -36,3 +38,11 @@ def get_password_hasher() -> PasswordHasher:
 
 def get_jwt_processor(config: JwtConfig = get_jwt_config()) -> JwtProcessor:
     return JwtProcessor(config)
+
+
+def get_create_traders(traders_repository: TraderRepository = Depends(get_trader_repository)) -> CreateTraders:
+    return CreateTraders(traders_repository)
+
+
+def get_create_usernames(traders_repository: TraderRepository = Depends(get_trader_repository)) -> AddUsernames:
+    return AddUsernames(traders_repository)

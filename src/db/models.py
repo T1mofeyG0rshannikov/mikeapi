@@ -77,7 +77,7 @@ class TraderOrm(Model):
     badges = Column(ARRAY(String), nullable=True)
 
     watch = Column(String, server_default="new")
-
+    count = Column(Integer, default=1)
     logs = relationship("LogOrm", back_populates="user")
 
     def __str__(self) -> str:

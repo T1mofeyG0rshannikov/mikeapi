@@ -8,10 +8,15 @@
       <div class="ms-auto" style="display: flex; flex-direction: column; align-items: start;">
         <div style="margin-bottom: 15px;">
             <div class="d-inline-block">
-                <a onclick="loadTraders()"
-                class="btn btn-secondary">
-                Import
-            </a>
+                <a data-bs-toggle="dropdown"
+                    class="btn btn-secondary dropdown-toggle">
+                    Import
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                  <li><a class="dropdown-item" onclick="loadTraders()">Профили</a></li>
+                  <li><a class="dropdown-item" onclick="loadUsernames()">Имена</a></li>
+                  <li><a class="dropdown-item" onclick="loadSubscribes()">Подписки</a></li>
+                </ul>
             </div>
             <style>
                 .import .message .error{
@@ -61,24 +66,62 @@
             const messageContainer = document.querySelector(".import .message");
 
             function loadTraders(){
-                const formData = new FormData();
-                const file = fileInput.files[0];
-                messageContainer.innerHTML = "Добавляем данные, можете закрывать страницу"
-                messageContainer.classList.remove("error")
-                formData.append("csv_file", file)
-                fetch("/traders/", {
-                    method: "POST",
-                    body: formData
-                }).then(resposne => {
-                    if (resposne.status === 200){
-                        messageContainer.innerHTML = "Данные добавились! Обновите страницу, чтобы увидеть их"
-                    }
-                    else{
-                        messageContainer.classList.add("error")
-                        messageContainer.innerHTML = "Что-то пошло не так, попробуйте позже"
-                    }
-                })
-            }
+              const formData = new FormData();
+              const file = fileInput.files[0];
+              messageContainer.innerHTML = "Добавляем данные, можете закрывать страницу"
+              messageContainer.classList.remove("error")
+              formData.append("csv_file", file)
+              fetch("/traders/", {
+                  method: "POST",
+                  body: formData
+              }).then(resposne => {
+                  if (resposne.status === 200){
+                      messageContainer.innerHTML = "Данные добавились! Обновите страницу, чтобы увидеть их"
+                  }
+                  else{
+                      messageContainer.classList.add("error")
+                      messageContainer.innerHTML = "Что-то пошло не так, попробуйте позже"
+                  }
+              })
+          }
+          function loadUsernames(){
+            const formData = new FormData();
+            const file = fileInput.files[0];
+            messageContainer.innerHTML = "Добавляем данные, можете закрывать страницу"
+            messageContainer.classList.remove("error")
+            formData.append("txt_file", file)
+            fetch("/usernames/", {
+                method: "POST",
+                body: formData
+            }).then(resposne => {
+                if (resposne.status === 200){
+                    messageContainer.innerHTML = "Данные добавились! Обновите страницу, чтобы увидеть их"
+                }
+                else{
+                    messageContainer.classList.add("error")
+                    messageContainer.innerHTML = "Что-то пошло не так, попробуйте позже"
+                }
+            })
+        }
+        function loadSubscribes(){
+          const formData = new FormData();
+          const file = fileInput.files[0];
+          messageContainer.innerHTML = "Добавляем данные, можете закрывать страницу"
+          messageContainer.classList.remove("error")
+          formData.append("txt_file", file)
+          fetch("/subscribes/", {
+              method: "POST",
+              body: formData
+          }).then(resposne => {
+              if (resposne.status === 200){
+                  messageContainer.innerHTML = "Данные добавились! Обновите страницу, чтобы увидеть их"
+              }
+              else{
+                  messageContainer.classList.add("error")
+                  messageContainer.innerHTML = "Что-то пошло не так, попробуйте позже"
+              }
+          })
+      }
         </script>
       </div>
     </div>

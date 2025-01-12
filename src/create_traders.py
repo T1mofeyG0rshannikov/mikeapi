@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from enum import StrEnum
 
 from src.db.models import TraderOrm
@@ -28,34 +27,39 @@ class TraderCode:
         pass
 
 
-@dataclass
-class Trader:
+from typing import List
+
+from pydantic import BaseModel
+
+
+class TraderCreateDTO(BaseModel):
     username: str
-    status: TraderStatus
-    badges: list[TradefBadge]
-    code: TraderCode
+    status: str | None = None
+    subscribes: int | None = None
+    subscribers: int | None = None
+    portfolio: int | None = None
+    trades: int | None = None
+    profit: float | None = None
+    badges: list[str] = []
+
+
+from sqlalchemy import select
+
+from src.db.database import SessionLocal
 
 
 class CreateTraders:
     def __init__(self, repository: TraderRepository) -> None:
-        self.repository = repository
+        self.traders_repository = repository
 
-    async def __call__(self, csvinput):
-        exist_codes = await self.repository.get_codes()
+    async def __call__(self, csvinput, db=SessionLocal()) -> None:
+        exist_codes = await self.traders_repository.get_codes()
 
-        traders = []
-
+        traders_data = []
         for row in csvinput:
-            code = generate_code()
-            ind = get_code_index(exist_codes, code)
-            while code_exists(exist_codes, code, ind):
-                code = generate_code()
-                ind = get_code_index(exist_codes, code)
-
-            traders.append(
-                TraderOrm(
+            traders_data.append(
+                TraderCreateDTO(
                     username=row[0].strip(),
-                    code=code,
                     status=row[1].strip(),
                     subscribes=int(row[2].strip()),
                     subscribers=int(row[3].strip()),
@@ -72,6 +76,36 @@ class CreateTraders:
                 )
             )
 
+        traders_data = sorted(traders_data, key=lambda t: t.username)
+        traders_names = [user.username for user in traders_data]
+
+        query = select(TraderOrm).where(TraderOrm.username.in_(traders_names))
+        result = await db.execute(query)
+        traders = result.scalars().all()
+
+        for ind, trader in enumerate(traders):
+            trader.status = traders_data[ind].status
+            trader.subscribes = traders_data[ind].subscribes
+            trader.subscribers = traders_data[ind].subscribers
+            trader.portfolio = traders_data[ind].portfolio
+            trader.trades = traders_data[ind].trades
+            trader.profit = traders_data[ind].profit
+            trader.badges = traders_data[ind].badges
+
+        exist_trader_names = [t.username for t in traders]
+
+        user_names = [user for user in traders_data if user.username not in exist_trader_names]
+
+        users_to_create = []
+        for user in user_names:
+            code = generate_code()
+            ind = get_code_index(exist_codes, code)
+            while code_exists(exist_codes, code, ind):
+                code = generate_code()
+                ind = get_code_index(exist_codes, code)
+
             exist_codes.insert(ind, code)
 
-        await self.repository.create_many(traders)
+            users_to_create.append(TraderOrm(**user.__dict__, code=code))
+        db.add_all(users_to_create)
+        await db.commit()

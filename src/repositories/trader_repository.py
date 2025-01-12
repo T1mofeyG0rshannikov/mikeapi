@@ -23,6 +23,7 @@ class TraderRepository(BaseRepository):
         trader = TraderOrm(username=username, code=code, watch=watch)
         self.db.add(trader)
         await self.db.commit()
+        return trader
 
     async def update(self, trader: TraderOrm) -> TraderOrm:
         await self.db.commit()
