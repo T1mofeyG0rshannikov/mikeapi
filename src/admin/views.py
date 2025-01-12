@@ -73,10 +73,11 @@ class TraderAdmin(ModelView, model=TraderOrm):
         TraderOrm.badges,
         TraderOrm.watch,
         TraderOrm.count,
+        TraderOrm.app,
     ]
 
     list_template = "sqladmin/list-traders.html"
-
+    column_labels = {"subscribes": "followers", "subscribers": "watches", "trades": "deals"}
     name = "Трейдер"
     name_plural = "Трейдеры"
 
@@ -85,7 +86,8 @@ class TraderAdmin(ModelView, model=TraderOrm):
     column_formatters = {
         TraderOrm.username: lambda trader, _: Markup(
             f"""<a href="https://www.tbank.ru/invest/social/profile/{trader.username}/" target="_blank">{trader.username}</a>"""
-        )
+        ),
+        TraderOrm.profit: lambda trader, _: f"{trader.profit} %",
     }
 
     async def list(self, request: Request) -> Pagination:

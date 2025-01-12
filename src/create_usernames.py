@@ -3,8 +3,9 @@ from bisect import bisect_left, bisect_right
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from src.create_traders import TraderStatus
 from src.db.database import SessionLocal
-from src.db.models import TraderOrm
+from src.db.models import TraderOrm, VendorOrm
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
 
@@ -33,7 +34,9 @@ class AddUsernames:
     def count(self, users, user) -> int:
         return bisect_right(users, user) - bisect_left(users, user)
 
-    async def __call__(self, users: list[CreateUsernameDTO], watch: str = "new", db=SessionLocal()) -> None:
+    async def __call__(
+        self, users: list[CreateUsernameDTO], watch: str = "new", app: VendorOrm | None = None, db=SessionLocal()
+    ) -> None:
         exist_codes = await self.traders_repository.get_codes()
 
         unique_users = sorted(set(users), key=lambda t: t.username)
@@ -52,6 +55,7 @@ class AddUsernames:
                 trader.count = ucount
 
             trader.watch = watch
+            trader.app = app
 
         exist_trader_names = [t.username for t in traders]
 
@@ -65,15 +69,21 @@ class AddUsernames:
                 code = generate_code()
                 ind = get_code_index(exist_codes, code)
 
-            create_data = {"username": user.username, "code": code, "watch": watch}
+            create_data = {"username": user.username, "code": code, "watch": watch, "app": app}
             exist_codes.insert(ind, code)
 
             if "%" in user.data:
                 profit = user.data.split()[0][0:-1].replace(",", ".").replace("−", "-")
-                if "-" in profit and len(profit) > 1:
+                if "-" in profit:
+                    if len(profit) > 1:
+                        create_data["profit"] = float(profit)
+                else:
                     create_data["profit"] = float(profit)
+
             else:
-                create_data["status"] = user.data.split()[0]
+                create_data["status"] = (
+                    user.data.split()[0] if create_data.get("profit") != 0 else TraderStatus.unactive
+                )
 
             users_to_create.append(TraderOrm(**create_data, count=users.count(user)))
         db.add_all(users_to_create)

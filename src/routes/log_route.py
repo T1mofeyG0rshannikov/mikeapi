@@ -41,6 +41,7 @@ async def create_log(
             username, operation, ticker, _, price, currency, _ = data.text.split()
             price = float(price)
             username = username[0:-1]
+            operation = "buy" if operation == "купил" else "sell"
 
             user = await trader_repository.get(username)
 
@@ -52,11 +53,16 @@ async def create_log(
                     code = generate_code()
                     ind = get_code_index(exist_codes, code)
 
-                user = await trader_repository.create(username=username, code=code, watch="on")
+                user = await trader_repository.create(username=username, code=code, watch="on", app=vendor)
             else:
                 if user.watch != "on":
                     user.watch = "on"
+                    user.app = vendor
                     user = await trader_repository.update(user)
+                else:
+                    if not user.app_id:
+                        user.app = vendor
+                        user = await trader_repository.update(user)
 
             await log_repository.create(
                 app=vendor,

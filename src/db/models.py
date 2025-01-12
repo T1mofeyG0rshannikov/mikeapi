@@ -31,6 +31,7 @@ class VendorOrm(Model):
     app_id = Column(String)
     auth_token = Column(String)
     logs = relationship("LogOrm", back_populates="app")
+    traders = relationship("TraderOrm", back_populates="app")
 
     def __str__(self) -> str:
         return f"vendor({self.app_id})"
@@ -71,14 +72,16 @@ class TraderOrm(Model):
     subscribes = Column(Integer, nullable=True)
     subscribers = Column(Integer, nullable=True)
 
-    portfolio = Column(Integer, nullable=True)
+    portfolio = Column(String, nullable=True)
     trades = Column(Integer, nullable=True)
     profit = Column(Float, nullable=True)
     badges = Column(ARRAY(String), nullable=True)
 
     watch = Column(String, server_default="new")
-    count = Column(Integer, default=1)
+    count = Column(Integer, default=0)
     logs = relationship("LogOrm", back_populates="user")
+    app_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
+    app = relationship(VendorOrm, back_populates="traders")
 
     def __str__(self) -> str:
         return self.username

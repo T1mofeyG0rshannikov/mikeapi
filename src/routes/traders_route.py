@@ -1,9 +1,8 @@
 import csv
+from collections.abc import Callable
 from functools import wraps
 from io import StringIO
 from typing import Annotated
-
-from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, File, UploadFile
 from starlette.requests import Request
@@ -17,9 +16,11 @@ from src.dependencies import (
     get_create_usernames,
     get_jwt_processor,
     get_user_repository,
+    get_vendor_repository,
 )
 from src.exceptions import NotPermittedError
 from src.repositories.user_repository import UserRepository
+from src.repositories.vendor_repository import VendorRepository
 
 router = APIRouter(prefix="", tags=["traders"])
 
@@ -75,7 +76,7 @@ async def get_txt_file(
 
     for line in decoded_contents.splitlines():
         if len(line) > 1:
-            strings.append(line[0:-1])
+            strings.append(line)
 
     users = []
 
@@ -112,6 +113,8 @@ async def add_usernames(
 async def add_subscribes(
     user: Annotated[UserOrm, Depends(get_user)],
     create_usernames: Annotated[AddUsernames, Depends(get_create_usernames)],
+    vendor_repository: Annotated[VendorRepository, Depends(get_vendor_repository)],
     txt_data=Depends(get_txt_file),
 ):
-    return await create_usernames(users=txt_data, watch="on")
+    vendor = await vendor_repository.get(id="Dev1")
+    return await create_usernames(users=txt_data, watch="on", app=vendor)

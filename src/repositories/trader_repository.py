@@ -1,6 +1,6 @@
 from sqlalchemy import func, select
 
-from src.db.models import TraderOrm
+from src.db.models import TraderOrm, VendorOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 
@@ -19,8 +19,9 @@ class TraderRepository(BaseRepository):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def create(self, username: str, code: str, watch: str = "new") -> TraderOrm:
-        trader = TraderOrm(username=username, code=code, watch=watch)
+    async def create(self, username: str, code: str, watch: str = "new", app: VendorOrm | None = None) -> TraderOrm:
+        print(app)
+        trader = TraderOrm(username=username, code=code, watch=watch, app=app)
         self.db.add(trader)
         await self.db.commit()
         return trader
