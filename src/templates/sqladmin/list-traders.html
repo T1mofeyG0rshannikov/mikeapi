@@ -8,15 +8,10 @@
       <div class="ms-auto" style="display: flex; flex-direction: column; align-items: start;">
         <div style="margin-bottom: 15px;">
             <div class="d-inline-block">
-                <a data-bs-toggle="dropdown"
-                    class="btn btn-secondary dropdown-toggle">
+                <a data-bs-toggle="dropdown" onclick="importFile()"
+                    class="btn btn-secondary">
                     Import
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                  <li><a class="dropdown-item" onclick="loadTraders()">Профили</a></li>
-                  <li><a class="dropdown-item" onclick="loadUsernames()">Имена</a></li>
-                  <li><a class="dropdown-item" onclick="loadSubscribes()">Подписки</a></li>
-                </ul>
             </div>
             <style>
                 .import .message .error{
@@ -56,14 +51,37 @@
             </div>
             {% endif %}
         </div>
-        <div class="import" style="display: flex; flex-direction: column; align-items: start; margin-bottom: 15px;">
-            <input type="file" id="traders-file">
-            <span class="message"></span>
+        <div class="import" style="display: flex; gap: 15px;display: flex; flex-direction: column; align-items: start; margin-bottom: 15px;">
+          <div style="display: flex; gap: 15px;">
+            <select class="import-type" style="height: 30px;">
+              <option><a class="dropdown-item" onclick="loadTraders()">Профили</a></option>
+              <option><a class="dropdown-item" onclick="loadUsernames()">Имена</a></option>
+              <option><a class="dropdown-item" onclick="loadSubscribes()">Подписки</a></option>
+            </select>
+            <div>
+              <input type="file" id="traders-file">
+            </div>
+          </div>
+          <span class="message"></span>
         </div>
 
         <script>
             const fileInput = document.getElementById("traders-file");
             const messageContainer = document.querySelector(".import .message");
+
+            function importFile(){
+              const type = document.querySelector(".import-type").value;
+
+              if (type == "Профили"){
+                loadTraders()
+              }
+              else if(type == "Имена"){
+                loadUsernames()
+              }
+              else if (type == "Подписки"){
+                loadSubscribes()
+              }
+            }
 
             function loadTraders(){
               const formData = new FormData();

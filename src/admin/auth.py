@@ -31,7 +31,6 @@ class AdminAuth(AuthenticationBackend):
             return LoginResponse(ok=False, password_error_message="Неверный пароль")
 
         access_token = self.jwt_processor.create_access_token(user.email, user.id)
-        print(access_token)
         request.session.update({"token": access_token})
         return LoginResponse(ok=True)
 

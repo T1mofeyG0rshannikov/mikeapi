@@ -1,3 +1,4 @@
+import pytz
 from fastapi.requests import Request
 from markupsafe import Markup
 from sqladmin import ModelView
@@ -7,20 +8,26 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import select
 
 from src.admin.forms import UserCreateForm, VendorCreateForm
-from src.db.models import APIURLSOrm, LogOrm, TraderOrm, UserOrm, VendorOrm
+from src.db.models import (
+    APIURLSOrm,
+    LogActivityOrm,
+    LogOrm,
+    TraderOrm,
+    UserOrm,
+    VendorOrm,
+)
 
 
 class LogAdmin(ModelView, model=LogOrm):
     column_list = [
         LogOrm.id,
         LogOrm.app,
-        LogOrm.text,
         LogOrm.time,
         LogOrm.user,
-        LogOrm.price,
-        LogOrm.currency,
         LogOrm.operation,
         LogOrm.ticker,
+        LogOrm.price,
+        LogOrm.currency,
         LogOrm.created_at,
         LogOrm.main_server,
     ]
@@ -29,7 +36,11 @@ class LogAdmin(ModelView, model=LogOrm):
     name_plural = "Логи"
 
     column_default_sort = ("created_at", True)
-    column_formatters = {LogOrm.created_at: lambda log, _: log.created_at.strftime("%d:%m:%Y.%H:%M:%S")}
+    column_formatters = {
+        LogOrm.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
+            "%d:%m:%Y.%H:%M:%S"
+        )
+    }
 
     page_size = 100
 
@@ -124,3 +135,78 @@ class TraderAdmin(ModelView, model=TraderOrm):
         )
 
         return pagination
+
+
+class LogActivityAdmin(ModelView, model=LogActivityOrm):
+    column_list = [
+        LogActivityOrm.date,
+        LogActivityOrm.hour00,
+        LogActivityOrm.hour01,
+        LogActivityOrm.hour02,
+        LogActivityOrm.hour03,
+        LogActivityOrm.hour04,
+        LogActivityOrm.hour05,
+        LogActivityOrm.hour06,
+        LogActivityOrm.hour07,
+        LogActivityOrm.hour08,
+        LogActivityOrm.hour09,
+        LogActivityOrm.hour10,
+        LogActivityOrm.hour11,
+        LogActivityOrm.hour12,
+        LogActivityOrm.hour13,
+        LogActivityOrm.hour14,
+        LogActivityOrm.hour15,
+        LogActivityOrm.hour16,
+        LogActivityOrm.hour17,
+        LogActivityOrm.hour18,
+        LogActivityOrm.hour19,
+        LogActivityOrm.hour20,
+        LogActivityOrm.hour21,
+        LogActivityOrm.hour22,
+        LogActivityOrm.hour23,
+        LogActivityOrm.last_day,
+    ]
+
+    name = "Активность"
+    name_plural = "Активность"
+    column_labels = {
+        "date": "Дата",
+        "hour00": "00",
+        "hour01": "01",
+        "hour02": "02",
+        "hour03": "03",
+        "hour04": "04",
+        "hour05": "05",
+        "hour06": "06",
+        "hour07": "07",
+        "hour08": "08",
+        "hour09": "09",
+        "hour10": "10",
+        "hour11": "11",
+        "hour12": "12",
+        "hour13": "13",
+        "hour14": "14",
+        "hour15": "15",
+        "hour16": "16",
+        "hour17": "17",
+        "hour18": "18",
+        "hour19": "19",
+        "hour20": "20",
+        "hour21": "21",
+        "hour22": "22",
+        "hour23": "23",
+        "last_day": "за сутки",
+    }
+
+    column_formatters = {
+        LogActivityOrm.date: lambda activity, _: activity.date.strftime("%d.%m.%Y"),
+    }
+
+    can_create = False
+    can_delete = False
+    can_edit = False
+    can_view_details = False
+
+    page_size = 100
+
+    column_default_sort = ("id", "desc")

@@ -38,8 +38,3 @@ class APIUrlsCreateForm(Form):
     reverse_url_status = SelectField(
         "ID приложения", choices=[(e.value, e.value) for e in UrlEnum], validators=[InputRequired()]
     )
-
-    def populate_obj(self, obj):
-        super().populate_obj(obj)
-        print(obj.__dict__)
-        # obj.main_url_status = UrlEnum.__getattribute__(obj.main_url_status)

@@ -20,6 +20,10 @@ from src.schemas.log import APIResponse, CreateLogRequest
 router = APIRouter(prefix="", tags=["logs"])
 
 
+def get_operations():
+    return {"купил": "buy", "продал": "sell"}
+
+
 @router.post("/{api_url}")
 async def create_log(
     api_url: str,
@@ -27,6 +31,7 @@ async def create_log(
     vendor_repository: Annotated[VendorRepository, Depends(get_vendor_repository)],
     trader_repository: Annotated[TraderRepository, Depends(get_trader_repository)],
     log_repository: Annotated[LogRepository, Depends(get_log_repository)],
+    operations: Annotated[dict, Depends(get_operations)],
 ):
     vendor_urls = await vendor_repository.get_vendor_urls()
     if api_url == vendor_urls.main_url:
@@ -38,10 +43,18 @@ async def create_log(
             if vendor.auth_token != data.auth_token:
                 raise InvalidAuthTokenError(f"ошибка аутентификации в приложении '{data.app_id}' - неверный токен")
 
-            username, operation, ticker, _, price, currency, _ = data.text.split()
-            price = float(price)
-            username = username[0:-1]
-            operation = "buy" if operation == "купил" else "sell"
+            try:
+                username, operation, ticker, _, price, currency, _ = data.text.split()
+                price = float(price)
+                username = username[0:-1]
+
+                operation = operations.get(operation)
+
+                if not operation:
+                    return APIResponse(status="fail")
+            except Exception as e:
+                print(e)
+                return APIResponse(status="fail")
 
             user = await trader_repository.get(username)
 
@@ -67,7 +80,6 @@ async def create_log(
             await log_repository.create(
                 app=vendor,
                 time=datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"),
-                text=data.text,
                 main_server=True,
                 user=user,
                 price=price,
@@ -96,9 +108,17 @@ async def create_log(
                 raise VendorNotFoundError(f"нет приложения с id '{data.app_id}'")
 
             if vendor.auth_token == data.auth_token:
-                username, operation, ticker, _, price, currency, _ = data.text.split()
-                price = float(price)
-                username = username[0:-1]
+                try:
+                    username, operation, ticker, _, price, currency, _ = data.text.split()
+                    price = float(price)
+                    username = username[0:-1]
+
+                    operation = operations.get(operation)
+
+                    if not operation:
+                        return APIResponse(status="fail")
+                except:
+                    return APIResponse(status="fail")
 
                 user = await trader_repository.get(username)
 
@@ -119,7 +139,6 @@ async def create_log(
                 await log_repository.create(
                     app=vendor,
                     time=datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"),
-                    text=data.text,
                     main_server=True,
                     user=user,
                     price=price,

@@ -1,13 +1,13 @@
 from src.db.models import LogOrm, TraderOrm, VendorOrm
 from src.repositories.base_reposiotory import BaseRepository
+from datetime import datetime
 
 
 class LogRepository(BaseRepository):
     async def create(
         self,
         app: VendorOrm,
-        time: str,
-        text: str,
+        time: datetime,
         main_server: bool,
         user: TraderOrm,
         currency: str,
@@ -18,7 +18,6 @@ class LogRepository(BaseRepository):
         log = LogOrm(
             app=app,
             time=time,
-            text=text,
             main_server=main_server,
             user=user,
             currency=currency,

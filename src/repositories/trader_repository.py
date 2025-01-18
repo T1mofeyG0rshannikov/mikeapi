@@ -20,7 +20,6 @@ class TraderRepository(BaseRepository):
         return result.scalars().first()
 
     async def create(self, username: str, code: str, watch: str = "new", app: VendorOrm | None = None) -> TraderOrm:
-        print(app)
         trader = TraderOrm(username=username, code=code, watch=watch, app=app)
         self.db.add(trader)
         await self.db.commit()

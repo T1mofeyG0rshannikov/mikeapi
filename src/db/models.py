@@ -1,18 +1,22 @@
 import enum
+from datetime import datetime
 
+import pytz
 from sqlalchemy import (
     Boolean,
     Column,
+    Date,
     DateTime,
     Enum,
     Float,
     ForeignKey,
     Integer,
     String,
-    func,
+    Time,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import TIMESTAMP
 
 from src.db.database import Model
 
@@ -93,9 +97,10 @@ class LogOrm(Model):
     id = Column(Integer, primary_key=True, index=True)
     app_id = Column(Integer, ForeignKey("vendors.id"))
     app = relationship(VendorOrm, back_populates="logs")
-    text = Column(String)
     time = Column(DateTime)
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(
+        TIMESTAMP(timezone=True), index=True, default=lambda: datetime.now(pytz.timezone("Europe/Moscow"))
+    )
     user_id = Column(Integer, ForeignKey("traders.id"))
     user = relationship(TraderOrm, back_populates="")
     main_server = Column(Boolean)
@@ -103,3 +108,45 @@ class LogOrm(Model):
     currency = Column(String)
     operation = Column(String)
     ticker = Column(String)
+
+
+class LogActivityOrm(Model):
+    __tablename__ = "logsactivity"
+
+    id = Column(Integer, index=True, primary_key=True)
+    date = Column(Date)
+
+    hour00 = Column(Integer, default=0)
+    hour01 = Column(Integer, default=0)
+    hour02 = Column(Integer, default=0)
+    hour03 = Column(Integer, default=0)
+    hour04 = Column(Integer, default=0)
+    hour05 = Column(Integer, default=0)
+    hour06 = Column(Integer, default=0)
+    hour07 = Column(Integer, default=0)
+    hour08 = Column(Integer, default=0)
+    hour09 = Column(Integer, default=0)
+    hour10 = Column(Integer, default=0)
+    hour11 = Column(Integer, default=0)
+    hour12 = Column(Integer, default=0)
+    hour13 = Column(Integer, default=0)
+    hour14 = Column(Integer, default=0)
+    hour15 = Column(Integer, default=0)
+    hour16 = Column(Integer, default=0)
+    hour17 = Column(Integer, default=0)
+    hour18 = Column(Integer, default=0)
+    hour19 = Column(Integer, default=0)
+    hour20 = Column(Integer, default=0)
+    hour21 = Column(Integer, default=0)
+    hour22 = Column(Integer, default=0)
+    hour23 = Column(Integer, default=0)
+
+    last_day = Column(Integer, default=0)
+
+
+class TickerOrm(Model):
+    __tablename__ = "tickers"
+
+    id = Column(Integer, index=True, primary_key=True)
+
+    name = Column(String)

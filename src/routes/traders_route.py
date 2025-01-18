@@ -116,5 +116,5 @@ async def add_subscribes(
     vendor_repository: Annotated[VendorRepository, Depends(get_vendor_repository)],
     txt_data=Depends(get_txt_file),
 ):
-    vendor = await vendor_repository.get(id="Dev1")
+    vendor = await vendor_repository.get(id="myapp")
     return await create_usernames(users=txt_data, watch="on", app=vendor)

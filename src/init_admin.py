@@ -3,7 +3,14 @@ from fastapi import FastAPI
 from src.admin.admin import CustomAdmin
 from src.admin.auth import AdminAuth
 from src.admin.config import get_admin_config
-from src.admin.views import APIUrlsAdmin, LogAdmin, TraderAdmin, UserAdmin, VendorAdmin
+from src.admin.views import (
+    APIUrlsAdmin,
+    LogActivityAdmin,
+    LogAdmin,
+    TraderAdmin,
+    UserAdmin,
+    VendorAdmin,
+)
 from src.db.database import engine
 
 
@@ -17,3 +24,4 @@ def init_admin(app: FastAPI):
     admin.add_view(APIUrlsAdmin)
     admin.add_view(LogAdmin)
     admin.add_view(TraderAdmin)
+    admin.add_view(LogActivityAdmin)
