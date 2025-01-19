@@ -21,11 +21,14 @@ async def create_log_activity(db=SessionLocal()):
         db.add(activity)
         await db.commit()
 
-    last_hour_query = select(func.count(LogOrm.id)).where(LogOrm.created_at >= one_hour_ago)
+    last_hour_query = select(func.count(LogOrm.id)).where(LogOrm.time >= one_hour_ago)
     last_hour_count = await db.execute(last_hour_query)
     last_hour_count = last_hour_count.scalars().first()
 
-    setattr(activity, f"hour{now.time().hour}", last_hour_count)
+    attr = str(now.time().hour - 1)
+    attr = "0" * (2 - len(attr)) + attr
+
+    setattr(activity, f"hour{attr}", last_hour_count)
     activity.last_day += last_hour_count
 
     await db.commit()

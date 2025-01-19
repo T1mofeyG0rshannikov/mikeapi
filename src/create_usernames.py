@@ -77,13 +77,21 @@ class AddUsernames:
                 if "-" in profit:
                     if len(profit) > 1:
                         create_data["profit"] = float(profit)
+                    else:
+                        create_data["profit"] = 0
+                        create_data["status"] = TraderStatus.unactive
                 else:
                     create_data["profit"] = float(profit)
+                    if float(profit) == 0.0:
+                        create_data["status"] = TraderStatus.unactive
 
             else:
                 create_data["status"] = (
                     user.data.split()[0] if create_data.get("profit") != 0 else TraderStatus.unactive
                 )
+
+            if "status" not in create_data:
+                create_data["status"] = TraderStatus.active
 
             users_to_create.append(TraderOrm(**create_data, count=users.count(user)))
         db.add_all(users_to_create)

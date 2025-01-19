@@ -1,6 +1,7 @@
+from datetime import datetime
+
 from src.db.models import LogOrm, TraderOrm, VendorOrm
 from src.repositories.base_reposiotory import BaseRepository
-from datetime import datetime
 
 
 class LogRepository(BaseRepository):

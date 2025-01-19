@@ -1,11 +1,13 @@
 import pytz
 from fastapi.requests import Request
 from markupsafe import Markup
-from sqladmin import ModelView
+from sqladmin import ModelView, action
+from sqladmin.helpers import slugify_class_name
 from sqladmin.pagination import Pagination
-from sqlalchemy import func
+from sqlalchemy import delete, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import select
+from starlette.responses import RedirectResponse
 
 from src.admin.forms import UserCreateForm, VendorCreateForm
 from src.db.models import (
@@ -42,7 +44,15 @@ class LogAdmin(ModelView, model=LogOrm):
         )
     }
 
+    @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
+    async def delete_all_action(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            await session.execute(delete(self.model))
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
+
     page_size = 100
+    can_export = False
 
 
 class UserAdmin(ModelView, model=UserOrm):
@@ -87,18 +97,27 @@ class TraderAdmin(ModelView, model=TraderOrm):
         TraderOrm.app,
     ]
 
+    page_size = 100
     list_template = "sqladmin/list-traders.html"
     column_labels = {"subscribes": "followers", "subscribers": "watches", "trades": "deals"}
     name = "Трейдер"
     name_plural = "Трейдеры"
 
     column_sortable_list = ["status"]
+    column_default_sort = ("id", "desc")
+
+    @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
+    async def delete_all_action(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            await session.execute(delete(self.model))
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
 
     column_formatters = {
         TraderOrm.username: lambda trader, _: Markup(
             f"""<a href="https://www.tbank.ru/invest/social/profile/{trader.username}/" target="_blank">{trader.username}</a>"""
         ),
-        TraderOrm.profit: lambda trader, _: f"{trader.profit} %",
+        TraderOrm.profit: lambda trader, _: f"{trader.profit} %" if trader.profit else "-",
     }
 
     async def list(self, request: Request) -> Pagination:
@@ -167,6 +186,7 @@ class LogActivityAdmin(ModelView, model=LogActivityOrm):
         LogActivityOrm.last_day,
     ]
 
+    list_template = "sqladmin/list-activity.html"
     name = "Активность"
     name_plural = "Активность"
     column_labels = {
@@ -198,6 +218,13 @@ class LogActivityAdmin(ModelView, model=LogActivityOrm):
         "last_day": "за сутки",
     }
 
+    @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
+    async def delete_all_action(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            await session.execute(delete(self.model))
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
+
     column_formatters = {
         LogActivityOrm.date: lambda activity, _: activity.date.strftime("%d.%m.%Y"),
     }
@@ -206,6 +233,7 @@ class LogActivityAdmin(ModelView, model=LogActivityOrm):
     can_delete = False
     can_edit = False
     can_view_details = False
+    can_export = False
 
     page_size = 100
 
