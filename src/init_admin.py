@@ -7,6 +7,7 @@ from src.admin.views import (
     APIUrlsAdmin,
     LogActivityAdmin,
     LogAdmin,
+    TickerAdmin,
     TraderAdmin,
     UserAdmin,
     VendorAdmin,
@@ -25,3 +26,4 @@ def init_admin(app: FastAPI):
     admin.add_view(LogAdmin)
     admin.add_view(TraderAdmin)
     admin.add_view(LogActivityAdmin)
+    admin.add_view(TickerAdmin)

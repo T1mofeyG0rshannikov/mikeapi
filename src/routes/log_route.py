@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 from typing import Annotated
 
+import pytz
 from fastapi import APIRouter, Depends, Response
 
 from src.db.models import UrlEnum
@@ -44,7 +45,11 @@ async def create_log(
                 raise InvalidAuthTokenError(f"ошибка аутентификации в приложении '{data.app_id}' - неверный токен")
 
             try:
-                username, operation, ticker, _, price, currency, _ = data.text.split()
+                username, operation, ticker_name, _, price, currency, _ = data.text.split()
+                ticker = await log_repository.get_ticker(slug=ticker_name)
+                if not ticker:
+                    ticker = await log_repository.create_ticker(slug=ticker_name)
+
                 price = float(price)
                 username = username[0:-1]
 
@@ -77,9 +82,15 @@ async def create_log(
                         user.app = vendor
                         user = await trader_repository.update(user)
 
+            moscow_tz = pytz.timezone("Europe/Moscow")
+            source_tz = pytz.utc  # или другую временную зону, если известно
+            local_time = moscow_tz.localize(datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"))
+
+            moscow_time = local_time.astimezone(source_tz)
+
             await log_repository.create(
                 app=vendor,
-                time=datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"),
+                time=moscow_time,
                 main_server=True,
                 user=user,
                 price=price,
@@ -109,7 +120,11 @@ async def create_log(
 
             if vendor.auth_token == data.auth_token:
                 try:
-                    username, operation, ticker, _, price, currency, _ = data.text.split()
+                    username, operation, ticker_name, _, price, currency, _ = data.text.split()
+                    ticker = await log_repository.get_ticker(slug=ticker_name)
+                    if not ticker:
+                        ticker = await log_repository.create_ticker(slug=ticker_name)
+
                     price = float(price)
                     username = username[0:-1]
 
@@ -135,10 +150,18 @@ async def create_log(
                     if user.watch != "on":
                         user.watch = "on"
                         user = await trader_repository.update(user)
+                source_tz = pytz.utc  # или другую временную зону, если известно
+                local_time = source_tz.localize(datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"))
+
+                # Указываем московское время
+                moscow_tz = pytz.timezone("Europe/Moscow")
+
+                # Переводим время в московскую временную зону
+                moscow_time = local_time.astimezone(moscow_tz)
 
                 await log_repository.create(
                     app=vendor,
-                    time=datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"),
+                    time=moscow_time,
                     main_server=True,
                     user=user,
                     price=price,

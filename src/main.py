@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -18,9 +19,10 @@ from src.routes.traders_route import router as traders_router
 async def lifespan(app: FastAPI):
     try:
         timezone = pytz.timezone("Europe/Moscow")
-        scheduler = AsyncIOScheduler(timezone=timezone)
+        # scheduler = AsyncIOScheduler(timezone=timezone)
+        scheduler = BackgroundScheduler(timezone=timezone)
 
-        scheduler.add_job(create_log_activity, "cron", hour="*")
+        scheduler.add_job(create_log_activity, "cron", hour="*", minute="*")
 
         scheduler.start()
         yield

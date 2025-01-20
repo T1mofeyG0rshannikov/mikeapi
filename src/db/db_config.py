@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 
 class DbConfig(BaseSettings):
     DATABASE_URL: str
+    SYNC_DATABASE_URL: str
 
     class Config:
         env_file = ".env"

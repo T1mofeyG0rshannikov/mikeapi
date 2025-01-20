@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from src.db.models import LogOrm, TraderOrm, VendorOrm
+from sqlalchemy import select
+
+from src.db.models import LogOrm, TickerOrm, TraderOrm, VendorOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 
@@ -30,3 +32,15 @@ class LogRepository(BaseRepository):
         self.db.add(log)
         await self.db.commit()
         return log
+
+    async def get_ticker(self, slug: str) -> TickerOrm:
+        query = select(TickerOrm).where(TickerOrm.slug == slug)
+        ticker = await self.db.execute(query)
+        return ticker.scalars().first()
+
+    async def create_ticker(self, slug: str) -> TickerOrm:
+        ticker = TickerOrm(slug=slug)
+        self.db.add(ticker)
+        await self.db.commit()
+
+        return ticker

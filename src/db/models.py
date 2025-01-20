@@ -1,19 +1,14 @@
+from sqlalchemy import func
+import asyncio
+from src.db.database import Session, SessionLocal
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import func, select
+from asgiref.sync import async_to_sync
 import enum
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytz
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Date,
-    DateTime,
-    Enum,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    Time,
-)
+from sqlalchemy import Boolean, Column, Date, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TIMESTAMP
@@ -78,7 +73,7 @@ class TraderOrm(Model):
 
     portfolio = Column(String, nullable=True)
     trades = Column(Integer, nullable=True)
-    profit = Column(Float, nullable=True)
+    profit = Column(Float, default=0)
     badges = Column(ARRAY(String), nullable=True)
 
     watch = Column(String, server_default="new")
@@ -105,7 +100,9 @@ class LogOrm(Model):
     price = Column(Float)
     currency = Column(String)
     operation = Column(String)
-    ticker = Column(String)
+
+    ticker_id = Column(Integer, ForeignKey("tickers.id"))
+    ticker = relationship("TickerOrm", back_populates="logs")
 
 
 class LogActivityOrm(Model):
@@ -142,9 +139,126 @@ class LogActivityOrm(Model):
     last_day = Column(Integer, default=0)
 
 
+async def get_log_count(ticker_id: int, db=SessionLocal()):
+    query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id)
+    log_count = await db.execute(query)
+    log_count = log_count.scalars().first()
+
+    return log_count
+
+
 class TickerOrm(Model):
     __tablename__ = "tickers"
 
     id = Column(Integer, index=True, primary_key=True)
+    slug = Column(String, index=True)
+    name = Column(String, nullable=True)
 
-    name = Column(String)
+    logs = relationship("LogOrm")
+
+    def __str__(self) -> str:
+        return self.slug
+
+    @hybrid_property
+    def last_trade_price(self, db=Session()) -> int:
+        ticker_id = self.id
+        query = select(LogOrm.price).where(LogOrm.ticker_id == ticker_id).order_by(LogOrm.id.desc())
+        log_count = db.execute(query)
+        log_count = log_count.scalars().first()
+
+        return log_count
+
+    @last_trade_price.expression
+    def last_trade_price(self, db=Session()) -> int:
+        ticker_id = self.id
+        return select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id)
+
+    @hybrid_property
+    def last_hour(self, db=Session()) -> int:
+        current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
+        last_our_time = current_time - timedelta(hours=1)
+        ticker_id = self.id
+        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+        log_count = db.execute(query)
+        log_count = log_count.scalars().first()
+
+        return log_count
+
+    @last_hour.expression
+    def last_hour(self, db=Session()) -> int:
+        current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
+        last_our_time = current_time - timedelta(hours=1)
+        ticker_id = self.id
+        return select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+
+    @hybrid_property
+    def last_day(self, db=Session()) -> int:
+        current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
+        last_our_time = current_time - timedelta(hours=24)
+        ticker_id = self.id
+        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+        log_count = db.execute(query)
+        log_count = log_count.scalars().first()
+
+        return log_count
+
+    @last_day.expression
+    def last_day(self, db=Session()) -> int:
+        current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
+        last_our_time = current_time - timedelta(hours=24)
+        ticker_id = self.id
+        return select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+
+    @hybrid_property
+    def last_week(self, db=Session()) -> int:
+        current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
+        last_our_time = current_time - timedelta(hours=24 * 7)
+        ticker_id = self.id
+        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+        log_count = db.execute(query)
+        log_count = log_count.scalars().first()
+
+        return log_count
+
+    @last_week.expression
+    def last_week(self, db=Session()) -> int:
+        current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
+        last_our_time = current_time - timedelta(hours=24 * 7)
+        ticker_id = self.id
+        return select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+
+    @hybrid_property
+    def last_month(self, db=Session()) -> int:
+        current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
+        last_our_time = current_time - timedelta(days=30)
+        ticker_id = self.id
+
+        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+        log_count = db.execute(query)
+        log_count = log_count.scalars().first()
+
+        return log_count
+
+    @last_month.expression
+    def last_month(self, db=Session()) -> int:
+        current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
+        last_our_time = current_time - timedelta(days=30)
+        ticker_id = self.id
+
+        return select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+
+    @hybrid_property
+    def trades(self, db=Session()) -> int:
+        ticker_id = self.id
+
+        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id)
+        log_count = db.execute(query)
+        log_count = log_count.scalars().first()
+
+        return log_count
+
+    @trades.expression
+    def trades(self, db=Session()) -> int:
+        ticker_id = self.id
+
+        return select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id)

@@ -14,6 +14,7 @@ from src.db.models import (
     APIURLSOrm,
     LogActivityOrm,
     LogOrm,
+    TickerOrm,
     TraderOrm,
     UserOrm,
     VendorOrm,
@@ -41,7 +42,8 @@ class LogAdmin(ModelView, model=LogOrm):
     column_formatters = {
         LogOrm.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
             "%d:%m:%Y.%H:%M:%S"
-        )
+        ),
+        LogOrm.time: lambda log, _: log.time.astimezone(pytz.timezone("Europe/Moscow")),
     }
 
     @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
@@ -238,3 +240,49 @@ class LogActivityAdmin(ModelView, model=LogActivityOrm):
     page_size = 100
 
     column_default_sort = ("id", "desc")
+
+
+class TickerAdmin(ModelView, model=TickerOrm):
+    column_list = [
+        TickerOrm.slug,
+        TickerOrm.name,
+        TickerOrm.last_trade_price,
+        TickerOrm.last_hour,
+        TickerOrm.last_day,
+        TickerOrm.last_week,
+        TickerOrm.last_month,
+        TickerOrm.trades,
+    ]
+
+    name = "Тикер"
+    name_plural = "Тикеры"
+
+    can_export = False
+    page_size = 100
+
+    column_default_sort = ("slug", "desc")
+
+    column_sortable_list = [
+        TickerOrm.last_trade_price,
+        TickerOrm.last_hour,
+        TickerOrm.last_day,
+        TickerOrm.last_week,
+        TickerOrm.last_month,
+        TickerOrm.trades,
+    ]
+
+    column_labels = {
+        "trades": "всего следок",
+        "last_trade_price": "цена последней сделки",
+        "last_hour": "последний час",
+        "last_day": "последний день",
+        "last_week": "последняя неделя",
+        "last_month": "последний месяц",
+    }
+
+    @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
+    async def delete_all_action(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            await session.execute(delete(self.model))
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
