@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import select
 from starlette.responses import RedirectResponse
 
-from src.admin.forms import UserCreateForm, VendorCreateForm
+from src.admin.forms import TickerForm, UserCreateForm, VendorCreateForm
 from src.db.models import (
     APIURLSOrm,
     LogActivityOrm,
@@ -43,7 +43,7 @@ class LogAdmin(ModelView, model=LogOrm):
         LogOrm.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
             "%d:%m:%Y.%H:%M:%S"
         ),
-        LogOrm.time: lambda log, _: log.time.astimezone(pytz.timezone("Europe/Moscow")),
+        LogOrm.time: lambda log, _: log.time.astimezone(pytz.timezone("Europe/Moscow")).strftime("%d:%m:%Y.%H:%M:%S"),
     }
 
     @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
@@ -246,6 +246,8 @@ class TickerAdmin(ModelView, model=TickerOrm):
     column_list = [
         TickerOrm.slug,
         TickerOrm.name,
+        TickerOrm.type,
+        TickerOrm.lot,
         TickerOrm.last_trade_price,
         TickerOrm.last_hour,
         TickerOrm.last_day,
@@ -260,9 +262,13 @@ class TickerAdmin(ModelView, model=TickerOrm):
     can_export = False
     page_size = 100
 
-    column_default_sort = ("slug", "desc")
+    column_default_sort = "slug"
 
     column_sortable_list = [
+        TickerOrm.slug,
+        TickerOrm.name,
+        TickerOrm.type,
+        TickerOrm.lot,
         TickerOrm.last_trade_price,
         TickerOrm.last_hour,
         TickerOrm.last_day,
@@ -271,13 +277,17 @@ class TickerAdmin(ModelView, model=TickerOrm):
         TickerOrm.trades,
     ]
 
+    list_template = "sqladmin/list-tickers.html"
+
     column_labels = {
-        "trades": "всего следок",
-        "last_trade_price": "цена последней сделки",
-        "last_hour": "последний час",
-        "last_day": "последний день",
-        "last_week": "последняя неделя",
-        "last_month": "последний месяц",
+        "slug": "Тикер",
+        "name": "название",
+        "trades": "Всего(с)",
+        "last_trade_price": "цена",
+        "last_hour": "1ч(с)",
+        "last_day": "1д(с)",
+        "last_week": "1н(с)",
+        "last_month": "1м(с)",
     }
 
     @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
@@ -286,3 +296,40 @@ class TickerAdmin(ModelView, model=TickerOrm):
             await session.execute(delete(self.model))
             await session.commit()
             return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
+
+    async def list(self, request: Request) -> Pagination:
+        page = self.validate_page_number(request.query_params.get("page"), 1)
+        page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
+        page_size = min(page_size or self.page_size, max(self.page_size_options))
+        search = request.query_params.get("search", None)
+        type = request.query_params.get("type")
+
+        stmt = self.list_query(request)
+
+        if type:
+            stmt = stmt.filter(TickerOrm.type == type)
+
+        for relation in self._list_relations:
+            stmt = stmt.options(selectinload(relation))
+
+        stmt = self.sort_query(stmt, request)
+
+        if search:
+            stmt = self.search_query(stmt=stmt, term=search)
+            count = await self.count(request, select(func.count()).select_from(stmt))
+        else:
+            count = await self.count(request, select(func.count()).select_from(stmt))
+
+        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
+        rows = await self._run_query(stmt)
+
+        pagination = Pagination(
+            rows=rows,
+            page=page,
+            page_size=page_size,
+            count=count,
+        )
+
+        return pagination
+
+    form = TickerForm

@@ -1,146 +1,41 @@
 {% extends "sqladmin/layout.html" %}
 {% block content %}
-
 <div class="col-12">
   <div class="card">
     <div class="card-header">
       <h3 class="card-title">{{ model_view.name_plural }}</h3>
-      <div class="ms-auto" style="display: flex; flex-direction: column; align-items: start;">
-        <div style="margin-bottom: 15px;">
-            <div class="d-inline-block">
-                <a data-bs-toggle="dropdown" onclick="importFile()"
-                    class="btn btn-secondary">
-                    Import
-                </a>
-            </div>
-            <style>
-                .import .message .error{
-                    color: rgb(255, 50, 50);
-                }
-            </style>
-
-            {% if model_view.can_export %}
-            {% if model_view.export_types | length > 1 %}
-            <div class="ms-3 d-inline-block dropdown">
-            <a href="#" class="btn btn-secondary dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
-                aria-expanded="false">
-                Export
-            </a>
-            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                {% for export_type in model_view.export_types %}
-                <li><a class="dropdown-item"
-                    href="{{ url_for('admin:export', identity=model_view.identity, export_type=export_type) }}">{{
-                    export_type | upper }}</a></li>
-                {% endfor %}
-            </ul>
-            </div>
-            {% elif model_view.export_types | length == 1 %}
-            <div class="ms-3 d-inline-block">
-            <a href="{{ url_for('admin:export', identity=model_view.identity, export_type=model_view.export_types[0]) }}"
-                class="btn btn-secondary">
-                Export
-            </a>
-            </div>
-            {% endif %}
-            {% endif %}
-            {% if model_view.can_create %}
-            <div class="ms-3 d-inline-block">
-            <a href="{{ url_for('admin:create', identity=model_view.identity) }}" class="btn btn-primary">
-                + New {{ model_view.name }}
-            </a>
-            </div>
-            {% endif %}
+      <div class="ms-auto">
+        {% if model_view.can_export %}
+        {% if model_view.export_types | length > 1 %}
+        <div class="ms-3 d-inline-block dropdown">
+          <a href="#" class="btn btn-secondary dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            Export
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+            {% for export_type in model_view.export_types %}
+            <li><a class="dropdown-item"
+                href="{{ url_for('admin:export', identity=model_view.identity, export_type=export_type) }}">{{
+                export_type | upper }}</a></li>
+            {% endfor %}
+          </ul>
         </div>
-        <div class="import" style="display: flex; gap: 15px;display: flex; flex-direction: column; align-items: start; margin-bottom: 15px;">
-          <div style="display: flex; gap: 15px;">
-            <select class="import-type" style="height: 30px;">
-              <option><a class="dropdown-item" onclick="loadTraders()">Профили</a></option>
-              <option><a class="dropdown-item" onclick="loadUsernames()">Имена</a></option>
-              <option><a class="dropdown-item" onclick="loadSubscribes()">Подписки</a></option>
-            </select>
-            <div>
-              <input type="file" id="traders-file">
-            </div>
-          </div>
-          <span class="message"></span>
+        {% elif model_view.export_types | length == 1 %}
+        <div class="ms-3 d-inline-block">
+          <a href="{{ url_for('admin:export', identity=model_view.identity, export_type=model_view.export_types[0]) }}"
+            class="btn btn-secondary">
+            Export
+          </a>
         </div>
-
-        <script>
-            const fileInput = document.getElementById("traders-file");
-            const messageContainer = document.querySelector(".import .message");
-
-            function importFile(){
-              const type = document.querySelector(".import-type").value;
-
-              if (type == "Профили"){
-                loadTraders()
-              }
-              else if(type == "Имена"){
-                loadUsernames()
-              }
-              else if (type == "Подписки"){
-                loadSubscribes()
-              }
-            }
-
-            function loadTraders(){
-              const formData = new FormData();
-              const file = fileInput.files[0];
-              messageContainer.innerHTML = "Добавляем данные, можете закрывать страницу"
-              messageContainer.classList.remove("error")
-              formData.append("csv_file", file)
-              fetch("/traders/", {
-                  method: "POST",
-                  body: formData
-              }).then(resposne => {
-                  if (resposne.status === 200){
-                      messageContainer.innerHTML = "Данные добавились! Обновите страницу, чтобы увидеть их"
-                  }
-                  else{
-                      messageContainer.classList.add("error")
-                      messageContainer.innerHTML = "Что-то пошло не так, попробуйте позже"
-                  }
-              })
-          }
-          function loadUsernames(){
-            const formData = new FormData();
-            const file = fileInput.files[0];
-            messageContainer.innerHTML = "Добавляем данные, можете закрывать страницу"
-            messageContainer.classList.remove("error")
-            formData.append("txt_file", file)
-            fetch("/usernames/", {
-                method: "POST",
-                body: formData
-            }).then(resposne => {
-                if (resposne.status === 200){
-                    messageContainer.innerHTML = "Данные добавились! Обновите страницу, чтобы увидеть их"
-                }
-                else{
-                    messageContainer.classList.add("error")
-                    messageContainer.innerHTML = "Что-то пошло не так, попробуйте позже"
-                }
-            })
-        }
-        function loadSubscribes(){
-          const formData = new FormData();
-          const file = fileInput.files[0];
-          messageContainer.innerHTML = "Добавляем данные, можете закрывать страницу"
-          messageContainer.classList.remove("error")
-          formData.append("txt_file", file)
-          fetch("/subscribes/", {
-              method: "POST",
-              body: formData
-          }).then(resposne => {
-              if (resposne.status === 200){
-                  messageContainer.innerHTML = "Данные добавились! Обновите страницу, чтобы увидеть их"
-              }
-              else{
-                  messageContainer.classList.add("error")
-                  messageContainer.innerHTML = "Что-то пошло не так, попробуйте позже"
-              }
-          })
-      }
-        </script>
+        {% endif %}
+        {% endif %}
+        {% if model_view.can_create %}
+        <div class="ms-3 d-inline-block">
+          <a href="{{ url_for('admin:create', identity=model_view.identity) }}" class="btn btn-primary">
+            + New {{ model_view.name }}
+          </a>
+        </div>
+        {% endif %}
       </div>
     </div>
     <div class="card-body border-bottom py-3">
@@ -194,12 +89,11 @@
           <tr>
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"
                 id="select-all"></th>
-            <th class="w-1"></th>
             {% for name in model_view._list_prop_names %}
             {% set label = model_view._column_labels.get(name, name) %}
             <th>
-              {% if name in model_view._sort_fields %}
-                {% if name != "status" %}
+                {% if name in model_view._sort_fields %}
+                {% if name != "type" %}
                 {% if request.query_params.get("sortBy") == name and request.query_params.get("sort") == "asc" %}
                 <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-up"></i> {{
                   label }}</a>
@@ -214,14 +108,14 @@
 
                   <a href="#" class="dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
                 aria-expanded="false">
-                Статус
+                Тип
             </a>
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                  <li><a class="dropdown-item" href="?status=">Все</a></li>
-                  <li><a class="dropdown-item" href="?status=Активный">Активный</a></li>
-                  <li><a class="dropdown-item" href="?status=Не активен">Не активен</a></li>
-                  <li><a class="dropdown-item" href="?status=Скрытый">Скрытый</a></li>
-                  <li><a class="dropdown-item" href="?status=Заблокированный">Заблокированный</a></li>
+                  <li><a class="dropdown-item" href="?type=">Все</a></li>
+                  <li><a class="dropdown-item" href="?type=Акция">Акция</a></li>
+                  <li><a class="dropdown-item" href="?type=Прив.">Прив.</a></li>
+                  <li><a class="dropdown-item" href="?type=Облиг.">Облиг.</a></li>
+                  <li><a class="dropdown-item" href="?type=Опцион">Опцион</a></li>
                  </ul>
                 </div>
                 {% endif %}
@@ -230,6 +124,7 @@
               {% endif %}
             </th>
             {% endfor %}
+            <th class="w-1"></th>
           </tr>
         </thead>
         <tbody>
@@ -239,27 +134,7 @@
               <input type="hidden" value="{{ get_object_identifier(row) }}">
               <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
             </td>
-            <td class="text-end">
-              {% if model_view.can_view_details %}
-              <a href="{{ model_view._build_url_for('admin:details', request, row) }}" data-bs-toggle="tooltip"
-                data-bs-placement="top" title="View">
-                <span class="me-1"><i class="fa-solid fa-eye"></i></span>
-              </a>
-              {% endif %}
-              {% if model_view.can_edit %}
-              <a href="{{ model_view._build_url_for('admin:edit', request, row) }}" data-bs-toggle="tooltip"
-                data-bs-placement="top" title="Edit">
-                <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
-              </a>
-              {% endif %}
-              {% if model_view.can_delete %}
-              <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(row) }}"
-                data-url="{{ model_view._url_for_delete(request, row) }}" data-bs-toggle="modal"
-                data-bs-target="#modal-delete" title="Delete">
-                <span class="me-1"><i class="fa-solid fa-trash"></i></span>
-              </a>
-              {% endif %}
-            </td>
+
             {% for name in model_view._list_prop_names %}
             {% set value, formatted_value = model_view.get_list_value(row, name) %}
             {% if name in model_view._relation_names %}
@@ -276,6 +151,28 @@
             <td>{{ formatted_value }}</td>
             {% endif %}
             {% endfor %}
+
+            <td class="text-end">
+                {% if model_view.can_view_details %}
+                <a href="{{ model_view._build_url_for('admin:details', request, row) }}" data-bs-toggle="tooltip"
+                  data-bs-placement="top" title="View">
+                  <span class="me-1"><i class="fa-solid fa-eye"></i></span>
+                </a>
+                {% endif %}
+                {% if model_view.can_edit %}
+                <a href="{{ model_view._build_url_for('admin:edit', request, row) }}" data-bs-toggle="tooltip"
+                  data-bs-placement="top" title="Edit">
+                  <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
+                </a>
+                {% endif %}
+                {% if model_view.can_delete %}
+                <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(row) }}"
+                  data-url="{{ model_view._url_for_delete(request, row) }}" data-bs-toggle="modal"
+                  data-bs-target="#modal-delete" title="Delete">
+                  <span class="me-1"><i class="fa-solid fa-trash"></i></span>
+                </a>
+                {% endif %}
+              </td>
           </tr>
           {% endfor %}
         </tbody>

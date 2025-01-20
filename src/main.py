@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-from datetime import datetime
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -22,7 +21,7 @@ async def lifespan(app: FastAPI):
         # scheduler = AsyncIOScheduler(timezone=timezone)
         scheduler = BackgroundScheduler(timezone=timezone)
 
-        scheduler.add_job(create_log_activity, "cron", hour="*", minute="*")
+        scheduler.add_job(create_log_activity, "cron", hour="*")
 
         scheduler.start()
         yield

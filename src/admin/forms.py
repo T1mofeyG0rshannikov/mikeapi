@@ -1,4 +1,4 @@
-from wtforms import Form, PasswordField, SelectField, StringField
+from wtforms import Form, IntegerField, PasswordField, SelectField, StringField
 from wtforms.validators import InputRequired
 
 from src.db.models import UrlEnum
@@ -29,12 +29,18 @@ class VendorCreateForm(Form):
     auth_token = StringField("Токен авторизации", validators=[InputRequired()])
 
 
-class APIUrlsCreateForm(Form):
-    main_url = StringField("ID приложения", validators=[InputRequired()])
-    main_url_status = SelectField(
-        "ID приложения", choices=[(e.value, e.value) for e in UrlEnum], validators=[InputRequired()]
-    )
-    reverse_url = StringField("ID приложения", validators=[InputRequired()])
-    reverse_url_status = SelectField(
-        "ID приложения", choices=[(e.value, e.value) for e in UrlEnum], validators=[InputRequired()]
-    )
+types = [
+    ("Акция", "Акция"),
+    ("Прив.", "Прив."),
+    ("Облиг.", "Облиг."),
+    ("Фьючерс", "Фьючер"),
+    ("Опцион", "Опцион"),
+]
+
+
+class TickerForm(Form):
+    slug = StringField("Тикер", validators=[InputRequired()])
+    name = StringField("Название")
+
+    lot = IntegerField("Лот")
+    type = SelectField("Тип", choices=types)

@@ -1,19 +1,25 @@
-from sqlalchemy import func
-import asyncio
-from src.db.database import Session, SessionLocal
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import func, select
-from asgiref.sync import async_to_sync
 import enum
 from datetime import datetime, timedelta
 
 import pytz
-from sqlalchemy import Boolean, Column, Date, Enum, Float, ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    func,
+    select,
+)
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TIMESTAMP
 
-from src.db.database import Model
+from src.db.database import Model, Session, SessionLocal
 
 
 class UrlEnum(str, enum.Enum):
@@ -153,6 +159,8 @@ class TickerOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
     slug = Column(String, index=True)
     name = Column(String, nullable=True)
+    lot = Column(Integer, default=0)
+    type = Column(String, nullable=True)
 
     logs = relationship("LogOrm")
 
