@@ -82,19 +82,29 @@ class APIUrlsAdmin(ModelView, model=APIURLSOrm):
     name_plural = "url адреса"
 
 
+TRADER_BADGE_ICONS = {
+    "Верифицирован": "verified",
+    "Автор стратегии": "strategy",
+    "Выбор Т-Инвестиций": "choice",
+    "Популярный": "popular",
+    "Помощник пульса": "assistant",
+}
+
+
 class TraderAdmin(ModelView, model=TraderOrm):
     column_list = [
+        TraderOrm.watch,
+        TraderOrm.badges,
         TraderOrm.id,
         TraderOrm.username,
         TraderOrm.code,
-        TraderOrm.status,
-        TraderOrm.subscribes,
         TraderOrm.subscribers,
+        TraderOrm.subscribes,
         TraderOrm.portfolio,
         TraderOrm.trades,
+        TraderOrm.status,
         TraderOrm.profit,
-        TraderOrm.badges,
-        TraderOrm.watch,
+        TraderOrm.last_update,
         TraderOrm.count,
         TraderOrm.app,
     ]
@@ -105,7 +115,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
     name = "Трейдер"
     name_plural = "Трейдеры"
 
-    column_sortable_list = ["status"]
+    column_sortable_list = ["status", "portfolio"]
     column_default_sort = ("id", "desc")
 
     @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
@@ -120,6 +130,18 @@ class TraderAdmin(ModelView, model=TraderOrm):
             f"""<a href="https://www.tbank.ru/invest/social/profile/{trader.username}/" target="_blank">{trader.username}</a>"""
         ),
         TraderOrm.profit: lambda trader, _: f"{trader.profit} %" if trader.profit else "-",
+        TraderOrm.watch: lambda trader, _: Markup(
+            f"""<img width="20" height="20" src="/static/icons/ico_{trader.watch}.png" />"""
+        ),
+        TraderOrm.last_update: lambda trader, _: trader.last_update.astimezone(pytz.timezone("Europe/Moscow")).strftime(
+            "%d:%m:%Y.%H:%M:%S"
+        )
+        if trader.last_update
+        else "-",
+        TraderOrm.badges: lambda trader, _: Markup(
+            f'''<div style="display: flex; gap: 10px;">{
+            "".join([f"""<img width="20" height="20" src="/static/icons/ico_{TRADER_BADGE_ICONS.get(badge)}.png" />""" for badge in trader.badges])}</div>'''
+        ),
     }
 
     async def list(self, request: Request) -> Pagination:
@@ -128,11 +150,54 @@ class TraderAdmin(ModelView, model=TraderOrm):
         page_size = min(page_size or self.page_size, max(self.page_size_options))
         search = request.query_params.get("search", None)
         status = request.query_params.get("status")
+        portfolio = request.query_params.get("portfolio")
+        trades = request.query_params.get("trades")
+        profit = request.query_params.get("profit")
+        profit_degres = request.query_params.get("profitDegres")
+        watch = request.query_params.get("watch")
+
+        subscribes = request.query_params.get("subscribes")
+        subscribes_degres = request.query_params.get("subscribesDegres")
+
+        subscribers = request.query_params.get("subscribers")
+        subscribers_degres = request.query_params.get("subscribesDegrers")
+
+        badge = request.query_params.get("badge")
 
         stmt = self.list_query(request)
 
+        if badge:
+            stmt = stmt.filter(TraderOrm.badges.contains([badge]))
+
+        if subscribes:
+            if subscribes_degres == "g":
+                stmt = stmt.filter(TraderOrm.subscribes >= int(subscribes))
+            elif subscribes_degres == "l":
+                stmt = stmt.filter(TraderOrm.subscribes <= int(subscribes))
+
+        if subscribers:
+            if subscribers_degres == "g":
+                stmt = stmt.filter(TraderOrm.subscribers >= int(subscribers))
+            elif subscribers_degres == "l":
+                stmt = stmt.filter(TraderOrm.subscribers <= int(subscribers))
+
+        if watch:
+            stmt = stmt.filter(TraderOrm.watch == watch)
+
+        if profit:
+            if profit_degres == "g":
+                stmt = stmt.filter(TraderOrm.profit >= float(profit))
+            elif profit_degres == "l":
+                stmt = stmt.filter(TraderOrm.profit <= float(profit))
+
+        if trades:
+            stmt = stmt.filter(TraderOrm.trades >= int(trades))
+
         if status:
             stmt = stmt.filter(TraderOrm.status == status)
+
+        if portfolio:
+            stmt = stmt.filter(TraderOrm.portfolio == portfolio)
 
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
@@ -250,9 +315,13 @@ class TickerAdmin(ModelView, model=TickerOrm):
         TickerOrm.lot,
         TickerOrm.last_trade_price,
         TickerOrm.last_hour,
+        TickerOrm.last_hour_traders,
         TickerOrm.last_day,
+        TickerOrm.last_day_traders,
         TickerOrm.last_week,
+        TickerOrm.last_week_traders,
         TickerOrm.last_month,
+        TickerOrm.last_month_traders,
         TickerOrm.trades,
     ]
 
@@ -271,9 +340,13 @@ class TickerAdmin(ModelView, model=TickerOrm):
         TickerOrm.lot,
         TickerOrm.last_trade_price,
         TickerOrm.last_hour,
+        TickerOrm.last_hour_traders,
         TickerOrm.last_day,
+        TickerOrm.last_day_traders,
         TickerOrm.last_week,
+        TickerOrm.last_week_traders,
         TickerOrm.last_month,
+        TickerOrm.last_month_traders,
         TickerOrm.trades,
     ]
 
@@ -285,9 +358,13 @@ class TickerAdmin(ModelView, model=TickerOrm):
         "trades": "Всего(с)",
         "last_trade_price": "цена",
         "last_hour": "1ч(с)",
+        "last_hour_traders": "1ч(т)",
         "last_day": "1д(с)",
+        "last_day_traders": "1д(т)",
         "last_week": "1н(с)",
+        "last_week_traders": "1н(т)",
         "last_month": "1м(с)",
+        "last_month_traders": "1м(т)",
     }
 
     @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")

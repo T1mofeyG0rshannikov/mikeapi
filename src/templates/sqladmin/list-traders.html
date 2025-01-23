@@ -188,6 +188,10 @@
         {% endif %}
       </div>
     </div>
+    <div class="card-body border-bottom py-3">
+      <button class="btn btn-primary" onclick="filter()">фильтр</button>
+    </div>
+
     <div class="table-responsive" style="min-height: 200px;">
       <table class="table card-table table-vcenter text-nowrap">
         <thead>
@@ -199,7 +203,7 @@
             {% set label = model_view._column_labels.get(name, name) %}
             <th>
               {% if name in model_view._sort_fields %}
-                {% if name != "status" %}
+                {% if name != "status" and name != "portfolio" and name != "watch" %}
                 {% if request.query_params.get("sortBy") == name and request.query_params.get("sort") == "asc" %}
                 <a href="{{ request.url.include_query_params(sort='desc') }}"><i class="fa-solid fa-arrow-up"></i> {{
                   label }}</a>
@@ -209,7 +213,7 @@
                 {% else %}
                 <a href="{{ request.url.include_query_params(sortBy=name, sort='asc') }}">{{ label }}</a>
                 {% endif %}
-                {% else %}
+                {% elif name == "status" %}
                 <div class="ms-3 d-inline-block dropdown">
 
                   <a href="#" class="dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
@@ -217,21 +221,170 @@
                 Статус
             </a>
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                  <li><a class="dropdown-item" href="?status=">Все</a></li>
-                  <li><a class="dropdown-item" href="?status=Активный">Активный</a></li>
-                  <li><a class="dropdown-item" href="?status=Не активен">Не активен</a></li>
-                  <li><a class="dropdown-item" href="?status=Скрытый">Скрытый</a></li>
-                  <li><a class="dropdown-item" href="?status=Заблокированный">Заблокированный</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('status', '')">Все</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('status', 'Активный')">Активный</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('status', 'Не активен')">Не активен</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('status', 'Скрытый')">Скрытый</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('status', 'Заблокированный')">Заблокированный</a></li>
+                 </ul>
+                </div>
+                {% elif name == "portfolio" %}
+                <div class="ms-3 d-inline-block dropdown">
+
+                  <a href="#" class="dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                Портфолио
+            </a>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '')">Все</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '<10K')">&lt;10K</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '10-50K')">10-50K</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '50-100K')">50-100K</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '100-500K')">100-500K</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '500K-1M')">500K-1M</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '1-5M')">1-5M</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '5-10M')">5-10M</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('portfolio', '10M+')">10M+</a></li>
+                 </ul>
+                </div>
+                {% elif name == "watch" %}
+                <div class="ms-3 d-inline-block dropdown">
+
+                  <a href="#" class="dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                Мониторинг
+            </a>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                  <li><a class="dropdown-item" onclick="addParam('watch', '')">Все</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('watch', 'on')">on</a></li>
+                  <li><a class="dropdown-item" onclick="addParam('watch', 'new')">new</a></li>
                  </ul>
                 </div>
                 {% endif %}
               {% else %}
+                <style>
+                  .searchable-container{
+                    display: flex;
+                    flex-direction: column;
+                  }
+                </style>
+                {% if name == 'trades' %}
+                  <div class="searchable-container">
+                    {{ label }}
+                    <input name="trades" id="trades" value="{{ request.query_params.get('trades', '') }}"/>
+                  </div>
+                  {% elif name == 'profit' %}
+                  <div class="searchable-container">
+                    {{ label }}
+                    <div>
+                      <select id="profit-select">
+                        <option {% if request.query_params.get('profitDegres') == "g" %}selected{% endif %} value="g">больше</option>
+                        <option {% if request.query_params.get('profitDegres') == "l" %}selected{% endif %} value="l">меньше</option>
+                      </select>
+                      <input name="profit" id="profit" value="{{ request.query_params.get('profit', '') }}"/>
+                    </div>
+                  </div>
+                  {% elif name == 'subscribers' %}
+                  <div class="searchable-container">
+                    {{ label }}
+                    <div>
+                      <select id="subscribers-select">
+                        <option {% if request.query_params.get('subscribersDegres') == "g" %}selected{% endif %} value="g">больше</option>
+                        <option {% if request.query_params.get('subscribersDegres') == "l" %}selected{% endif %} value="l">меньше</option>
+                      </select>
+                      <input name="subscribers" id="subscribers" value="{{ request.query_params.get('subscribers', '') }}"/>
+                    </div>
+                  </div>
+                  {% elif name == 'subscribes' %}
+                  <div class="searchable-container">
+                    {{ label }}
+                    <div>
+                      <select id="subscribes-select">
+                        <option {% if request.query_params.get('subscribesDegres') == "g" %}selected{% endif %} value="g">больше</option>
+                        <option {% if request.query_params.get('subscribesDegres') == "l" %}selected{% endif %} value="l">меньше</option>
+                      </select>
+                      <input name="subscribes" id="subscribes" value="{{ request.query_params.get('subscribes', '') }}"/>
+                    </div>
+                  </div>
+                  {% elif name == 'badges' %}
+                  <div class="searchable-container">
+                    {{ label }}
+                    <div>
+                      <select id="badges">
+                        <option {% if request.query_params.get('badge', '') == "" %}selected{% endif %} value="">Все</option>
+                        <option {% if request.query_params.get('badge') == "Верифицирован" %}selected{% endif %} value="Верифицирован">Верифицирован</option>
+                        <option {% if request.query_params.get('badge') == "Автор стратегии" %}selected{% endif %} value="Автор стратегии">Автор стратегии</option>
+                        <option {% if request.query_params.get('badge') == "Выбор Т-Инвестиций" %}selected{% endif %} value="Выбор Т-Инвестиций">Выбор Т-Инвестиций</option>
+                        <option {% if request.query_params.get('badge') == "Популярный" %}selected{% endif %} value="Популярный">Популярный</option>
+                        <option {% if request.query_params.get('badge') == "Помощник пульса" %}selected{% endif %} value="Помощник пульса">Помощник пульса</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {% elif name == 'watch' %}
+                  <div class="searchable-container">
+                    {{ label }}
+                    <div>
+                      <select id="watch">
+                        <option {% if request.query_params.get('watch', '') == "" %}selected{% endif %} value="">Все</option>
+                        <option {% if request.query_params.get('watch') == "on" %}selected{% endif %} value="on">on</option>
+                        <option {% if request.query_params.get('watch') == "off" %}selected{% endif %} value="off">off</option>
+                        <option {% if request.query_params.get('watch') == "raw" %}selected{% endif %} value="raw">raw</option>
+                        <option {% if request.query_params.get('watch') == "new" %}selected{% endif %} value="new">new</option>
+                      </select>
+                    </div>
+                  </div>
+                {% else %}
                 {{ label }}
+                {% endif %}
               {% endif %}
             </th>
             {% endfor %}
           </tr>
         </thead>
+        <script>
+          function filter(){
+            const trades = document.getElementById("trades").value;
+            const profit = document.getElementById("profit").value;
+            const profitDegres = document.getElementById("profit-select").value;
+
+            const subscribes = document.getElementById("subscribes").value;
+            const subscribesDegres = document.getElementById("subscribes-select").value;
+
+            const subscribers = document.getElementById("subscribers").value;
+            const subscribersDegres = document.getElementById("subscribers-select").value;
+            const badge = document.getElementById("badges").value;
+            const watch = document.getElementById("watch").value;
+
+            addParams([
+              ['watch', watch],
+              ['trades', trades],
+              ['profit', profit],
+              ['profitDegres', profitDegres],
+
+              ['subscribes', subscribes],
+              ['subscribesDegres', subscribesDegres],
+
+              ['subscribers', subscribers],
+              ['subscribersDegres', subscribersDegres],
+              ['badge', badge]
+            ]);
+          }
+          function addParams(list){
+            const currentUrl = new URL(window.location.href);
+            for (let param of list){
+              const [key, value] = param;
+              currentUrl.searchParams.set(key, value);
+            }
+            window.location.href = currentUrl.toString();
+          }
+
+          function addParam(key, value){
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set(key, value);
+            window.location.href = currentUrl.toString();
+          }
+        </script>
         <tbody>
           {% for row in pagination.rows %}
           <tr>

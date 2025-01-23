@@ -25,6 +25,18 @@ class TradefBadge(StrEnum):
     helper = "Помощник пульса"
 
 
+TRADER_PORTFOLIO = {
+    "до 10 000": "<10K",
+    "до 50 000": "10-50K",
+    "до 100 000": "50-100K",
+    "до 500 000": "100-500K",
+    "до 1 000 000": "500K-1M",
+    "до 5 000 000": "1-5M",
+    "до 10 000 000": "5-10M",
+    "от 10 000 000": "10M+",
+}
+
+
 class TraderCode:
     def __init__(self, code: str):
         self._code = code
@@ -62,7 +74,7 @@ class CreateTraders:
                     status=status,
                     subscribes=int(row[2].strip()),
                     subscribers=int(row[3].strip()),
-                    portfolio=row[4].strip()[1:-1].replace(" ", "")
+                    portfolio=TRADER_PORTFOLIO.get(row[4].strip()[1:-1].replace(" ", ""))
                     if len(row[4].strip()[1:-1].replace(" ", "")) > 0
                     else None,
                     trades=int(row[5].strip()),

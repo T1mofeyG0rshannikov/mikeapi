@@ -11,12 +11,12 @@ def create_log_activity(db=Session()):
     now = datetime.now(pytz.timezone("Europe/Moscow"))
     one_hour_ago = now - timedelta(hours=1)
 
-    activity_query = select(LogActivityOrm).where(LogActivityOrm.date == now.date())
+    activity_query = select(LogActivityOrm).where(LogActivityOrm.date == one_hour_ago.date())
     activity = db.execute(activity_query)
     activity = activity.scalars().first()
 
     if not activity:
-        activity = LogActivityOrm(date=now.date())
+        activity = LogActivityOrm(date=one_hour_ago.date())
 
         db.add(activity)
         db.commit()
