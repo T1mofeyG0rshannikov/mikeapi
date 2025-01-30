@@ -11,6 +11,8 @@ from src.dependencies import (
     get_trader_repository,
     get_vendor_repository,
 )
+from src.entites.trade import TRADE_OPERATIONS
+from src.entites.trader import TraderWatch
 from src.exceptions import APIServerError, InvalidAuthTokenError, VendorNotFoundError
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.log_repository import LogRepository
@@ -21,10 +23,6 @@ from src.schemas.log import APIResponse, CreateLogRequest
 router = APIRouter(prefix="", tags=["logs"])
 
 
-def get_operations():
-    return {"купил": "buy", "продал": "sell"}
-
-
 @router.post("/{api_url}")
 async def create_log(
     api_url: str,
@@ -32,7 +30,6 @@ async def create_log(
     vendor_repository: Annotated[VendorRepository, Depends(get_vendor_repository)],
     trader_repository: Annotated[TraderRepository, Depends(get_trader_repository)],
     log_repository: Annotated[LogRepository, Depends(get_log_repository)],
-    operations: Annotated[dict, Depends(get_operations)],
 ):
     vendor_urls = await vendor_repository.get_vendor_urls()
     if api_url == vendor_urls.main_url:
@@ -48,12 +45,12 @@ async def create_log(
                 username, operation, ticker_name, _, price, currency, _ = data.text.split()
                 ticker = await log_repository.get_ticker(slug=ticker_name)
                 if not ticker:
-                    ticker = await log_repository.create_ticker(slug=ticker_name)
+                    ticker = await log_repository.create_ticker(slug=ticker_name, currency=currency)
 
                 price = float(price)
                 username = username[0:-1]
 
-                operation = operations.get(operation)
+                operation = TRADE_OPERATIONS.get(operation)
 
                 if not operation:
                     return APIResponse(status="fail")
@@ -71,10 +68,10 @@ async def create_log(
                     code = generate_code()
                     ind = get_code_index(exist_codes, code)
 
-                user = await trader_repository.create(username=username, code=code, watch="on", app=vendor)
+                user = await trader_repository.create(username=username, code=code, watch=TraderWatch.on, app=vendor)
             else:
-                if user.watch != "on":
-                    user.watch = "on"
+                if user.watch != TraderWatch.on:
+                    user.watch = TraderWatch.on
                     user.app = vendor
                     user = await trader_repository.update(user)
                 else:
@@ -123,12 +120,12 @@ async def create_log(
                     username, operation, ticker_name, _, price, currency, _ = data.text.split()
                     ticker = await log_repository.get_ticker(slug=ticker_name)
                     if not ticker:
-                        ticker = await log_repository.create_ticker(slug=ticker_name)
+                        ticker = await log_repository.create_ticker(slug=ticker_name, currency=currency)
 
                     price = float(price)
                     username = username[0:-1]
 
-                    operation = operations.get(operation)
+                    operation = TRADE_OPERATIONS.get(operation)
 
                     if not operation:
                         return APIResponse(status="fail")
@@ -145,10 +142,10 @@ async def create_log(
                         code = generate_code()
                         ind = get_code_index(exist_codes, code)
 
-                    user = await trader_repository.create(username=username, code=code, watch="on")
+                    user = await trader_repository.create(username=username, code=code, watch=TraderWatch.on)
                 else:
-                    if user.watch != "on":
-                        user.watch = "on"
+                    if user.watch != TraderWatch.on:
+                        user.watch = TraderWatch.on
                         user = await trader_repository.update(user)
                 source_tz = pytz.utc  # или другую временную зону, если известно
                 local_time = source_tz.localize(datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"))

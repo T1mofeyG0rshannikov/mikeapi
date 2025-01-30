@@ -12,12 +12,17 @@ from sqlalchemy import (
     Integer,
     String,
     event,
+    func,
+    select,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TIMESTAMP
 
-from src.db.database import Model
+from src.db.database import Model, Session
+from src.entites.ticker import TICKER_TYPES
+from src.entites.trader import TraderWatch
 
 
 class UrlEnum(str, enum.Enum):
@@ -37,7 +42,7 @@ class VendorOrm(Model):
     traders = relationship("TraderOrm", back_populates="app")
 
     def __str__(self) -> str:
-        return f"vendor({self.app_id})"
+        return self.app_id
 
 
 class APIURLSOrm(Model):
@@ -87,6 +92,8 @@ class TraderOrm(Model):
     app = relationship(VendorOrm, back_populates="traders")
     last_update = Column(TIMESTAMP(timezone=True), nullable=True)
 
+    watches = TraderWatch
+
     def __str__(self) -> str:
         return self.username
 
@@ -113,6 +120,18 @@ class LogOrm(Model):
 
     ticker_id = Column(Integer, ForeignKey("tickers.id"))
     ticker = relationship("TickerOrm", back_populates="logs")
+
+    @hybrid_property
+    def delayed(self, db=Session()):
+        query = select(SettingsOrm)
+        settings = db.execute(query).scalars.first()
+        if settings:
+            delay = settings.delay
+
+            if self.created_at - self.time >= delay:
+                return True
+
+        return False
 
 
 class LogActivityOrm(Model):
@@ -155,12 +174,14 @@ class TickerOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
     slug = Column(String, index=True)
     name = Column(String, nullable=True)
-    lot = Column(Integer, default=0)
+    lot = Column(Float, default=0)
     type = Column(String, nullable=True)
+    currency = Column(String)
 
     logs = relationship("LogOrm")
 
     trades = Column(Integer, default=0)
+    traders = Column(Integer, default=0)
     last_month_traders = Column(Integer, default=0)
     last_month = Column(Integer, default=0)
     last_week_traders = Column(Integer, default=0)
@@ -171,5 +192,44 @@ class TickerOrm(Model):
     last_hour = Column(Integer, default=0)
     last_trade_price = Column(Integer, default=0)
 
+    end = Column(Date, nullable=True)
+
+    types = TICKER_TYPES
+
+    @hybrid_property
+    def rare(self, db=Session()) -> bool:
+        settings = db.execute(select(SettingsOrm)).scalars().first()
+        if not settings:
+            return False
+
+        return self.last_month < settings.rare_tickers_limit
+
+    @rare.expression
+    def rare(self, db=Session()):
+        settings = db.execute(select(SettingsOrm)).scalars().first()
+        return self.last_month < settings.rare_tickers_limit
+
+    @hybrid_property
+    def archive(self) -> bool:
+        if not self.end:
+            return False
+
+        return self.end < datetime.now().date()
+
+    @archive.expression
+    def archive(self) -> bool:
+        if not self.end:
+            return False
+
+        return self.end < func.current_date()
+
     def __str__(self) -> str:
         return self.slug
+
+
+class SettingsOrm(Model):
+    __tablename__ = "settings"
+
+    id = Column(Integer, index=True, primary_key=True)
+    log_delay = Column(Integer, default=0)
+    rare_tickers_limit = Column(Integer, default=0)

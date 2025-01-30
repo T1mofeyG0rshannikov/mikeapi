@@ -38,8 +38,8 @@ class LogRepository(BaseRepository):
         ticker = await self.db.execute(query)
         return ticker.scalars().first()
 
-    async def create_ticker(self, slug: str) -> TickerOrm:
-        ticker = TickerOrm(slug=slug)
+    async def create_ticker(self, slug: str, currency: str) -> TickerOrm:
+        ticker = TickerOrm(slug=slug, currency=currency)
         self.db.add(ticker)
         await self.db.commit()
 

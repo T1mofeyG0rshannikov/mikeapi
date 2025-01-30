@@ -1,8 +1,15 @@
-from wtforms import Form, IntegerField, PasswordField, SelectField, StringField
+from wtforms import (
+    DateField,
+    Form,
+    IntegerField,
+    PasswordField,
+    SelectField,
+    StringField,
+)
 from wtforms.validators import InputRequired
 
-from src.db.models import UrlEnum
 from src.dependencies import get_password_hasher
+from src.entites.ticker import TICKER_TYPES
 
 
 class UserCreateForm(Form):
@@ -29,18 +36,13 @@ class VendorCreateForm(Form):
     auth_token = StringField("Токен авторизации", validators=[InputRequired()])
 
 
-types = [
-    ("Акция", "Акция"),
-    ("Прив.", "Прив."),
-    ("Облиг.", "Облиг."),
-    ("Фьючерс", "Фьючерс"),
-    ("Опцион", "Опцион"),
-]
-
-
 class TickerForm(Form):
     slug = StringField("Тикер", validators=[InputRequired()])
     name = StringField("Название")
 
+    types = [(type_["value"], type_["name"]) for type_ in TICKER_TYPES]
+
     lot = IntegerField("Лот")
     type = SelectField("Тип", choices=types)
+    currency = StringField("Валюта")
+    end = DateField("Конец")

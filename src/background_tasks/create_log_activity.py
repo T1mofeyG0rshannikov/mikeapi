@@ -26,6 +26,9 @@ def create_log_activity(db=Session()):
     last_hour_count = last_hour_count.scalars().first()
 
     attr = str(now.time().hour - 1)
+    if attr == "-1":
+        attr = "23"
+
     attr = "0" * (2 - len(attr)) + attr
 
     setattr(activity, f"hour{attr}", last_hour_count)

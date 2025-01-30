@@ -18,6 +18,7 @@ from src.dependencies import (
     get_user_repository,
     get_vendor_repository,
 )
+from src.entites.trader import TraderWatch
 from src.exceptions import NotPermittedError
 from src.repositories.user_repository import UserRepository
 from src.repositories.vendor_repository import VendorRepository
@@ -117,4 +118,4 @@ async def add_subscribes(
     txt_data=Depends(get_txt_file),
 ):
     vendor = await vendor_repository.get(id="myapp")
-    return await create_usernames(users=txt_data, watch="on", app=vendor)
+    return await create_usernames(users=txt_data, watch=TraderWatch.on, app=vendor)

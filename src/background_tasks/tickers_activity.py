@@ -19,14 +19,12 @@ def get_tickers_activity(db=Session()) -> None:
 
         current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
 
-        last_our_time = current_time - timedelta(hours=1)
-        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+        last_hour_time = current_time - timedelta(hours=1)
+        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_hour_time)
         log_count = db.execute(query)
         log_count = log_count.scalars().first()
 
         last_hour = log_count
-
-        last_hour_time = current_time - timedelta(days=1)
 
         subquery = (
             select(LogOrm.user_id)
@@ -34,7 +32,6 @@ def get_tickers_activity(db=Session()) -> None:
             .distinct()
             .alias("subquery")
         )
-
         query = select(func.count(TraderOrm.id)).where(TraderOrm.id.in_(subquery))
 
         log_count = db.execute(query)
@@ -58,8 +55,7 @@ def get_tickers_activity(db=Session()) -> None:
 
         last_day_traders = log_count
 
-        last_our_time = current_time - timedelta(hours=24)
-        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
+        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_day_time)
         log_count = db.execute(query)
         log_count = log_count.scalars().first()
 
@@ -88,15 +84,11 @@ def get_tickers_activity(db=Session()) -> None:
 
         last_week_traders = log_count
 
-        last_our_time = current_time - timedelta(days=30)
-
-        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_our_time)
-        log_count = db.execute(query)
-        log_count = log_count.scalars().first()
-
-        last_month = log_count
-
         last_month_time = current_time - timedelta(days=30)
+
+        query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id, LogOrm.time >= last_month_time)
+        log_count = db.execute(query)
+        last_month = log_count.scalars().first()
 
         subquery = (
             select(LogOrm.user_id)
@@ -108,17 +100,20 @@ def get_tickers_activity(db=Session()) -> None:
         query = select(func.count(TraderOrm.id)).where(TraderOrm.id.in_(subquery))
 
         log_count = db.execute(query)
-        log_count = log_count.scalars().first()
-
-        last_month_traders = log_count
+        last_month_traders = log_count.scalars().first()
 
         query = select(func.count(LogOrm.id)).where(LogOrm.ticker_id == ticker_id)
         log_count = db.execute(query)
-        log_count = log_count.scalars().first()
+        trades = log_count.scalars().first()
 
-        trades = log_count
+        subquery = select(LogOrm.user_id).where(LogOrm.ticker_id == ticker_id).distinct().alias("subquery")
+
+        query = select(func.count(TraderOrm.id)).where(TraderOrm.id.in_(subquery))
+        log_count = db.execute(query)
+        traders = log_count.scalars().first()
 
         ticker.trades = trades
+        ticker.traders = traders
         ticker.last_month_traders = last_month_traders
         ticker.last_month = last_month
         ticker.last_week_traders = last_week_traders
