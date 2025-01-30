@@ -7,3 +7,10 @@ class TraderWatch(StrEnum):
     off = "off"
     raw = "raw"
     bad = "bad"
+
+
+class TraderStatus(StrEnum):
+    active = "Активный"
+    unactive = "Не активен"
+    hidden = "Скрытый"
+    blocked = "Заблокированный"

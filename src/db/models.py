@@ -11,20 +11,19 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    case,
     event,
     func,
-    case,
     select,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TIMESTAMP
 
 from src.db.database import Model, Session
 from src.entites.ticker import TICKER_TYPES
-from src.entites.trader import TraderWatch
+from src.entites.trader import TraderStatus, TraderWatch
 
 
 class UrlEnum(str, enum.Enum):
@@ -95,6 +94,7 @@ class TraderOrm(Model):
     last_update = Column(TIMESTAMP(timezone=True), nullable=True)
 
     watches = TraderWatch
+    statuses = TraderStatus
 
     def __str__(self) -> str:
         return self.username

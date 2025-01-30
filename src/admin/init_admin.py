@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 
-from src.admin.model_views.trade import LogAdmin
 from src.admin.admin import CustomAdmin
 from src.admin.auth import AdminAuth
 from src.admin.config import get_admin_config
 from src.admin.model_views.ticker import TickerAdmin
+from src.admin.model_views.trade import LogAdmin
 from src.admin.model_views.trader import TraderAdmin
 from src.admin.views import (
     APIUrlsAdmin,

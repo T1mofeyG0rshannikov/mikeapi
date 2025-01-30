@@ -5,14 +5,8 @@ from sqladmin.helpers import slugify_class_name
 from sqlalchemy import delete
 from starlette.responses import RedirectResponse
 
-from src.admin.forms import UserCreateForm, VendorCreateForm
 from src.db.models import (
-    APIURLSOrm,
-    LogActivityOrm,
     LogOrm,
-    SettingsOrm,
-    UserOrm,
-    VendorOrm,
 )
 
 

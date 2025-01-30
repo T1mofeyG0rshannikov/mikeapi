@@ -143,6 +143,36 @@
         </script>
       </div>
     </div>
+    <style>
+      .filter-container{
+        border-radius: 5px;
+        margin: 7px 5px;
+        width: calc(100% - 20px);
+        background-color: rgb(240, 240, 255);
+        display: flex;
+        gap: 15px;
+        font-size: 12px;
+        padding: 5px;
+        align-items: end;
+        padding-top: 0!important;
+      }
+      .filter-container .string{
+        display: flex;
+        gap: 10px;
+      }
+      .filter-container select{
+        padding: 5px 7px;
+        border-radius: 5px;
+        border: 1px solid rgb(230, 230, 230);
+        color: rgb(130, 130, 130)
+      }
+      .filter-container input{
+        padding: 5px 7px;
+        border-radius: 5px;
+        border: 1px solid rgb(230, 230, 230);
+        color: rgb(130, 130, 130)
+      }
+    </style>
     <div class="card-body border-bottom py-3">
       <div class="d-flex justify-content-between">
         <div class="dropdown col-4">
@@ -188,9 +218,7 @@
         {% endif %}
       </div>
     </div>
-    <div class="card-body border-bottom py-3" style="display: flex; gap: 15px; font-size: 12px;">
-      <button class="btn btn-primary" onclick="filter()">фильтр</button>
-
+    <div class="card-body border-bottom py-3 filter-container">
       <div class="ms-3 d-inline-block dropdown">
         <div class="searchable-container">
           Мониторинг
@@ -221,7 +249,7 @@
 
       <div class="searchable-container">
         Подписчики
-        <div>
+        <div class="string">
           <select id="subscribers-select">
             <option {% if request.query_params.get('subscribersDegres') == "g" %}selected{% endif %} value="g">больше</option>
             <option {% if request.query_params.get('subscribersDegres') == "l" %}selected{% endif %} value="l">меньше</option>
@@ -230,38 +258,33 @@
         </div>
       </div>
 
-      <div class="ms-3 d-inline-block dropdown">
-
-        <a href="#" class="dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
-      aria-expanded="false">
-      Портфолио
-  </a>
-      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '')">Все</a></li>
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '<10K')">&lt;10K</a></li>
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '10-50K')">10-50K</a></li>
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '50-100K')">50-100K</a></li>
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '100-500K')">100-500K</a></li>
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '500K-1M')">500K-1M</a></li>
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '1-5M')">1-5M</a></li>
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '5-10M')">5-10M</a></li>
-        <li><a class="dropdown-item" onclick="addParam('portfolio', '10M+')">10M+</a></li>
-       </ul>
+      <div class="searchable-container">
+        Портфолио
+        <div>
+          <select id="watch">
+            <option {% if request.query_params.get('portfolio', '') == "" %}selected{% endif %} value="">Все</option>
+            <option {% if request.query_params.get('portfolio') == '<10K' %}selected{% endif %} value="<10K">&lt;10K</option>
+            <option {% if request.query_params.get('portfolio') == '10-50K' %}selected{% endif %} value="10-50K">10-50K</option>
+            <option {% if request.query_params.get('portfolio') == '50-100K' %}selected{% endif %} value="50-100K">50-100K</option>
+            <option {% if request.query_params.get('portfolio') == '100-500K' %}selected{% endif %} value="100-500K">100-500K</option>
+            <option {% if request.query_params.get('portfolio') == '500K-1M' %}selected{% endif %} value="500K-1M">500K-1M</option>
+            <option {% if request.query_params.get('portfolio') == '1-5M' %}selected{% endif %} value="1-5M">1-5M</option>
+            <option {% if request.query_params.get('portfolio') == '5-10M' %}selected{% endif %} value="5-10M">5-10M</option>
+            <option {% if request.query_params.get('portfolio') == '10M+' %}selected{% endif %} value="10M+">10M+</option>
+          </select>
+        </div>
       </div>
 
-      <div class="ms-3 d-inline-block dropdown">
-
-        <a href="#" class="dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown"
-      aria-expanded="false">
-      Статус
-  </a>
-      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-        <li><a class="dropdown-item" onclick="addParam('status', '')">Все</a></li>
-        <li><a class="dropdown-item" onclick="addParam('status', 'Активный')">Активный</a></li>
-        <li><a class="dropdown-item" onclick="addParam('status', 'Не активен')">Не активен</a></li>
-        <li><a class="dropdown-item" onclick="addParam('status', 'Скрытый')">Скрытый</a></li>
-        <li><a class="dropdown-item" onclick="addParam('status', 'Заблокированный')">Заблокированный</a></li>
-       </ul>
+      <div class="searchable-container">
+        Статус
+        <div>
+          <select id="status">
+            <option {% if request.query_params.get('portfolio', '') == "" %}selected{% endif %} value="">Все</option>
+            {% for status in model_view.model.statuses %}
+              <option {% if request.query_params.get('status') == status %}selected{% endif %} value="{{ status }}">{{ status }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
 
       <div class="searchable-container">
@@ -290,6 +313,8 @@
           <input name="subscribes" id="subscribes" value="{{ request.query_params.get('subscribes', '') }}"/>
         </div>
       </div>
+
+      <button class="btn btn-primary" onclick="filter()">фильтр</button>
     </div>
 
     <div class="table-responsive" style="min-height: 200px;">

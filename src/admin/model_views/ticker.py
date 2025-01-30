@@ -29,6 +29,8 @@ class TickerAdmin(ModelView, model=TickerOrm):
         TickerOrm.type,
         TickerOrm.lot,
         TickerOrm.last_trade_price,
+        TickerOrm.currency,
+        TickerOrm.end,
         TickerOrm.last_hour,
         TickerOrm.last_hour_traders,
         TickerOrm.last_day,
@@ -38,7 +40,7 @@ class TickerAdmin(ModelView, model=TickerOrm):
         TickerOrm.last_month,
         TickerOrm.last_month_traders,
         TickerOrm.trades,
-        TickerOrm.end,
+        TickerOrm.traders,
     ]
 
     name = "Тикер"

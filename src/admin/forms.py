@@ -6,8 +6,8 @@ from wtforms import (
     SelectField,
     StringField,
 )
-from wtforms.validators import InputRequired
-from wtforms.validators import Optional
+from wtforms.validators import InputRequired, Optional
+
 from src.dependencies import get_password_hasher
 from src.entites.ticker import TICKER_TYPES
 
