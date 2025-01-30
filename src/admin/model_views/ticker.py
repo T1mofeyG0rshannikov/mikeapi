@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 from markupsafe import Markup
@@ -7,19 +5,17 @@ from sqladmin import ModelView, action
 from sqladmin.helpers import slugify_class_name
 from sqladmin.pagination import Pagination
 from sqlalchemy import delete, func, select
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import selectinload
 
 from src.admin.forms import TickerForm
-from src.db.database import Session
-from src.db.models import SettingsOrm, TickerOrm
+from src.db.models import TickerOrm
 from src.entites.ticker import TICKER_TYPES
 
 
 def get_ticker_type_slug(ticker_type: str) -> str:
     for type_ in TICKER_TYPES:
         if type_["value"] == ticker_type:
-            return type_.get("link", "bonds")
+            return type_.get("slug", "bonds")
 
     return "bonds"
 

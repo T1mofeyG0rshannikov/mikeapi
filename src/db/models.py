@@ -13,10 +13,12 @@ from sqlalchemy import (
     String,
     event,
     func,
+    case,
     select,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_method
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TIMESTAMP
 
@@ -174,7 +176,7 @@ class TickerOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
     slug = Column(String, index=True)
     name = Column(String, nullable=True)
-    lot = Column(Float, default=0)
+    lot = Column(Integer, default=0)
     type = Column(String, nullable=True)
     currency = Column(String)
 
@@ -190,7 +192,7 @@ class TickerOrm(Model):
     last_day_traders = Column(Integer, default=0)
     last_hour_traders = Column(Integer, default=0)
     last_hour = Column(Integer, default=0)
-    last_trade_price = Column(Integer, default=0)
+    last_trade_price = Column(Float, default=0)
 
     end = Column(Date, nullable=True)
 
@@ -207,7 +209,10 @@ class TickerOrm(Model):
     @rare.expression
     def rare(self, db=Session()):
         settings = db.execute(select(SettingsOrm)).scalars().first()
-        return self.last_month < settings.rare_tickers_limit
+        if not settings:
+            return False
+
+        return case((self.last_month < settings.rare_tickers_limit, True), else_=False)
 
     @hybrid_property
     def archive(self) -> bool:
@@ -217,11 +222,11 @@ class TickerOrm(Model):
         return self.end < datetime.now().date()
 
     @archive.expression
-    def archive(self) -> bool:
+    def archive(self):
         if not self.end:
             return False
 
-        return self.end < func.current_date()
+        return case((self.end < func.current_date(), True), else_=False)
 
     def __str__(self) -> str:
         return self.slug

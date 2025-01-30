@@ -7,7 +7,7 @@ from wtforms import (
     StringField,
 )
 from wtforms.validators import InputRequired
-
+from wtforms.validators import Optional
 from src.dependencies import get_password_hasher
 from src.entites.ticker import TICKER_TYPES
 
@@ -45,4 +45,4 @@ class TickerForm(Form):
     lot = IntegerField("Лот")
     type = SelectField("Тип", choices=types)
     currency = StringField("Валюта")
-    end = DateField("Конец")
+    end = DateField("Конец", validators=[Optional()])
