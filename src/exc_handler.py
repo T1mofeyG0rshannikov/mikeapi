@@ -8,7 +8,7 @@ from src.exceptions import (
     NotPermittedError,
     VendorNotFoundError,
 )
-from src.schemas.log import APIResponse
+from src.schemas.common import APIResponse
 
 
 async def server_error_exc_handler(request: Request, exc: APIServerError) -> JSONResponse:

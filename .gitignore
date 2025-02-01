@@ -1,3 +1,4 @@
 .env
+.env-prod
 __pycache__
 .mypy_cache

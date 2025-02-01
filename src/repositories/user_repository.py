@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from src.db.models import UserOrm
+from src.db.models.models import UserOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 

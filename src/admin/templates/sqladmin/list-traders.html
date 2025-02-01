@@ -150,11 +150,12 @@
         width: calc(100% - 20px);
         background-color: rgb(240, 240, 255);
         display: flex;
-        gap: 15px;
-        font-size: 12px;
+        gap: 10px;
+        font-size: 10px;
         padding: 5px;
         align-items: end;
-        padding-top: 0!important;
+        padding-top: 5!important;
+        min-width: 1050px;
       }
       .filter-container .string{
         display: flex;
@@ -218,10 +219,46 @@
         {% endif %}
       </div>
     </div>
+    <div class="card-body border-bottom py-3 search-container">
+      <input placeholder="usernames..." type="text" id="search-usernames" value="{{ request.query_params.get('search', '')}}">
+      <button class="btn btn-primary" onclick="search()">поиск</button>
+    </div>
+
+    <style>
+      .search-container{
+        background-color: rgb(210, 240, 250);
+        border-radius: 7px;
+        width: calc(100% - 20px);
+        margin: 10px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .search-container input{
+        border: 1px solid rgb(230, 230, 230);
+        color: rgb(130, 130, 130);
+        width: 100%;
+        border-radius: 5px;
+        padding: 3px 8px;
+      }
+    </style>
+
+    <script>
+      function search(){
+        const searchString = document.getElementById("search-usernames").value;
+        if (searchString == undefined){
+          addParam('search', '');
+        }
+        else{
+          addParam('search', searchString);
+        }
+      }
+    </script>
+
     <div class="card-body border-bottom py-3 filter-container">
       <div class="ms-3 d-inline-block dropdown">
         <div class="searchable-container">
-          Мониторинг
+          Монитор
           <div>
             <select id="watch">
               <option {% if request.query_params.get('watch', '') == "" %}selected{% endif %} value="">Все</option>
@@ -234,34 +271,21 @@
       </div>
 
       <div class="searchable-container">
-        Бейджи
+        Статус
         <div>
-          <select id="badges">
-            <option {% if request.query_params.get('badge', '') == "" %}selected{% endif %} value="">Все</option>
-            <option {% if request.query_params.get('badge') == "Верифицирован" %}selected{% endif %} value="Верифицирован">Верифицирован</option>
-            <option {% if request.query_params.get('badge') == "Автор стратегии" %}selected{% endif %} value="Автор стратегии">Автор стратегии</option>
-            <option {% if request.query_params.get('badge') == "Выбор Т-Инвестиций" %}selected{% endif %} value="Выбор Т-Инвестиций">Выбор Т-Инвестиций</option>
-            <option {% if request.query_params.get('badge') == "Популярный" %}selected{% endif %} value="Популярный">Популярный</option>
-            <option {% if request.query_params.get('badge') == "Помощник пульса" %}selected{% endif %} value="Помощник пульса">Помощник пульса</option>
+          <select style="width: 120px;" id="status">
+            <option {% if request.query_params.get('portfolio', '') == "" %}selected{% endif %} value="">Все</option>
+            {% for status in model_view.model.statuses %}
+              <option {% if request.query_params.get('status') == status %}selected{% endif %} value="{{ status }}">{{ status }}</option>
+            {% endfor %}
           </select>
         </div>
       </div>
 
       <div class="searchable-container">
-        Подписчики
-        <div class="string">
-          <select id="subscribers-select">
-            <option {% if request.query_params.get('subscribersDegres') == "g" %}selected{% endif %} value="g">больше</option>
-            <option {% if request.query_params.get('subscribersDegres') == "l" %}selected{% endif %} value="l">меньше</option>
-          </select>
-          <input style="width: 70px;" name="subscribers" id="subscribers" value="{{ request.query_params.get('subscribers', '') }}"/>
-        </div>
-      </div>
-
-      <div class="searchable-container">
-        Портфолио
+        Портфель
         <div>
-          <select id="watch">
+          <select style="width: 70px;" id="watch">
             <option {% if request.query_params.get('portfolio', '') == "" %}selected{% endif %} value="">Все</option>
             <option {% if request.query_params.get('portfolio') == '<10K' %}selected{% endif %} value="<10K">&lt;10K</option>
             <option {% if request.query_params.get('portfolio') == '10-50K' %}selected{% endif %} value="10-50K">10-50K</option>
@@ -276,41 +300,56 @@
       </div>
 
       <div class="searchable-container">
-        Статус
-        <div>
-          <select id="status">
-            <option {% if request.query_params.get('portfolio', '') == "" %}selected{% endif %} value="">Все</option>
-            {% for status in model_view.model.statuses %}
-              <option {% if request.query_params.get('status') == status %}selected{% endif %} value="{{ status }}">{{ status }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-
-      <div class="searchable-container">
         Сделки
-        <input style="width: 70px;" name="trades" id="trades" value="{{ request.query_params.get('trades', '') }}"/>
-      </div>
-
-      <div class="searchable-container">
-        Профит
         <div>
-          <select id="profit-select">
-            <option {% if request.query_params.get('profitDegres') == "g" %}selected{% endif %} value="g">больше</option>
-            <option {% if request.query_params.get('profitDegres') == "l" %}selected{% endif %} value="l">меньше</option>
-          </select>
-          <input style="width: 70px;" name="profit" id="profit" value="{{ request.query_params.get('profit', '') }}"/>
+          <input style="width: 50px;" name="trades_l" id="trades_l" value="{{ request.query_params.get('deals_l', '') }}"/>
+          <input style="width: 50px;" name="trades_r" id="trades_r" value="{{ request.query_params.get('deals_r', '') }}"/>
         </div>
       </div>
 
       <div class="searchable-container">
-        subscribes
+        Прибыль
         <div>
-          <select id="subscribes-select">
-            <option {% if request.query_params.get('subscribesDegres') == "g" %}selected{% endif %} value="g">больше</option>
-            <option {% if request.query_params.get('subscribesDegres') == "l" %}selected{% endif %} value="l">меньше</option>
+          <input style="width: 50px;" name="profit_l" id="profit_l" value="{{ request.query_params.get('profit_l', '') }}"/>
+          <input style="width: 50px;" name="profit_r" id="profit_r" value="{{ request.query_params.get('profit_r', '') }}"/>
+        </div>
+      </div>
+
+      <div class="searchable-container">
+        Подписчики
+        <div class="string">
+          <input style="width: 50px;" name="subscribers_l" id="subscribers_l" value="{{ request.query_params.get('subscribers_l', '') }}"/>
+          <input style="width: 50px;" name="subscribers_r" id="subscribers_r" value="{{ request.query_params.get('subscribers_r', '') }}"/>
+        </div>
+      </div>
+
+      <div class="searchable-container">
+        Подписан
+        <div>
+          <input style="width: 50px;" name="subscribes_l" id="subscribes_l" value="{{ request.query_params.get('subscribes_l', '') }}"/>
+          <input style="width: 50px;" name="subscribes_r" id="subscribes_r" value="{{ request.query_params.get('subscribes_r', '') }}"/>
+        </div>
+      </div>
+
+      <div class="searchable-container">
+        Счётчик
+        <div>
+          <input style="width: 50px;" name="count_l" id="count_l" value="{{ request.query_params.get('count_l', '') }}"/>
+          <input style="width: 50px;" name="count_r" id="count_r" value="{{ request.query_params.get('count_r', '') }}"/>
+        </div>
+      </div>
+
+      <div class="searchable-container">
+        Бейджи
+        <div>
+          <select id="badges">
+            <option {% if request.query_params.get('badge', '') == "" %}selected{% endif %} value="">Все</option>
+            <option {% if request.query_params.get('badge') == "Верифицирован" %}selected{% endif %} value="Верифицирован">Вериф.</option>
+            <option {% if request.query_params.get('badge') == "Автор стратегии" %}selected{% endif %} value="Автор стратегии">Автор</option>
+            <option {% if request.query_params.get('badge') == "Выбор Т-Инвестиций" %}selected{% endif %} value="Выбор Т-Инвестиций">Выбор</option>
+            <option {% if request.query_params.get('badge') == "Популярный" %}selected{% endif %} value="Популярный">Попул.</option>
+            <option {% if request.query_params.get('badge') == "Помощник пульса" %}selected{% endif %} value="Помощник пульса">Помощ.</option>
           </select>
-          <input name="subscribes" id="subscribes" value="{{ request.query_params.get('subscribes', '') }}"/>
         </div>
       </div>
 
@@ -323,7 +362,7 @@
           <tr>
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"
                 id="select-all"></th>
-            <th class="w-1"></th>
+
             {% for name in model_view._list_prop_names %}
             {% set label = model_view._column_labels.get(name, name) %}
             <th>
@@ -335,7 +374,7 @@
                 <a href="{{ request.url.include_query_params(sort='asc') }}"><i class="fa-solid fa-arrow-down"></i> {{ label
                   }}</a>
                 {% else %}
-                <a href="{{ request.url.include_query_params(sortBy=name, sort='asc') }}">{{ label }}</a>
+                <a href="{{ request.url.include_query_params(sortBy=name, sort='desc') }}">{{ label }}</a>
                 {% endif %}
               {% else %}
                 <style>
@@ -344,40 +383,47 @@
                     flex-direction: column;
                   }
                 </style>
-
-
                 {{ label }}
-
               {% endif %}
             </th>
             {% endfor %}
+            <th class="w-1"></th>
           </tr>
         </thead>
         <script>
           function filter(){
-            const trades = document.getElementById("trades").value;
-            const profit = document.getElementById("profit").value;
-            const profitDegres = document.getElementById("profit-select").value;
+            const trades_l = document.getElementById("trades_l").value;
+            const trades_r = document.getElementById("trades_r").value;
+            const profit_l = document.getElementById("profit_l").value;
+            const profit_r = document.getElementById("profit_r").value;
 
-            const subscribes = document.getElementById("subscribes").value;
-            const subscribesDegres = document.getElementById("subscribes-select").value;
+            const subscribes_l = document.getElementById("subscribes_l").value;
+            const subscribes_r = document.getElementById("subscribes_r").value;
 
-            const subscribers = document.getElementById("subscribers").value;
-            const subscribersDegres = document.getElementById("subscribers-select").value;
+            const subscribers_l = document.getElementById("subscribers_l").value;
+            const subscribers_r = document.getElementById("subscribers_r").value;
+
             const badge = document.getElementById("badges").value;
             const watch = document.getElementById("watch").value;
 
+            const count_l = document.getElementById("count_l").value;
+            const count_r = document.getElementById("count_r").value;
+
             addParams([
               ['watch', watch],
-              ['trades', trades],
-              ['profit', profit],
-              ['profitDegres', profitDegres],
+              ['deals_l', trades_l],
+              ['deals_r', trades_r],
+              ['profit_l', profit_l],
+              ['profit_r', profit_r],
 
-              ['subscribes', subscribes],
-              ['subscribesDegres', subscribesDegres],
+              ['subscribes_l', subscribes_l],
+              ['subscribes_r', subscribes_r],
 
-              ['subscribers', subscribers],
-              ['subscribersDegres', subscribersDegres],
+              ['count_l', count_l],
+              ['count_r', count_r],
+              ['subscribers_l', subscribers_l],
+              ['subscribers_r', subscribers_r],
+
               ['badge', badge]
             ]);
           }
@@ -403,6 +449,24 @@
               <input type="hidden" value="{{ get_object_identifier(row) }}">
               <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
             </td>
+
+            {% for name in model_view._list_prop_names %}
+            {% set value, formatted_value = model_view.get_list_value(row, name) %}
+            {% if name in model_view._relation_names %}
+            {% if is_list( value ) %}
+            <td>
+              {% for elem, formatted_elem in zip(value, formatted_value) %}
+              <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">({{ formatted_elem }})</a>
+              {% endfor %}
+            </td>
+            {% else %}
+            <td><a href="{{ model_view._url_for_details_with_prop(request, row, name) }}">{{ formatted_value }}</a></td>
+            {% endif %}
+            {% else %}
+            <td>{{ formatted_value }}</td>
+            {% endif %}
+            {% endfor %}
+
             <td class="text-end">
               {% if model_view.can_view_details %}
               <a href="{{ model_view._build_url_for('admin:details', request, row) }}" data-bs-toggle="tooltip"
@@ -424,22 +488,6 @@
               </a>
               {% endif %}
             </td>
-            {% for name in model_view._list_prop_names %}
-            {% set value, formatted_value = model_view.get_list_value(row, name) %}
-            {% if name in model_view._relation_names %}
-            {% if is_list( value ) %}
-            <td>
-              {% for elem, formatted_elem in zip(value, formatted_value) %}
-              <a href="{{ model_view._build_url_for('admin:details', request, elem) }}">({{ formatted_elem }})</a>
-              {% endfor %}
-            </td>
-            {% else %}
-            <td><a href="{{ model_view._url_for_details_with_prop(request, row, name) }}">{{ formatted_value }}</a></td>
-            {% endif %}
-            {% else %}
-            <td>{{ formatted_value }}</td>
-            {% endif %}
-            {% endfor %}
           </tr>
           {% endfor %}
         </tbody>
@@ -505,4 +553,9 @@
   {% endif %}
   {% endfor %}
 </div>
+<style>
+  td{
+      font-size: 12px;
+  }
+</style>
 {% endblock %}

@@ -10,7 +10,7 @@ from starlette.requests import Request
 from src.auth.jwt_processor import JwtProcessor
 from src.create_traders import CreateTraders
 from src.create_usernames import AddUsernames, CreateUsernameDTO
-from src.db.models import UserOrm
+from src.db.models.models import UserOrm
 from src.dependencies import (
     get_create_traders,
     get_create_usernames,

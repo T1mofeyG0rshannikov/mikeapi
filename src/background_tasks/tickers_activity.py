@@ -4,7 +4,7 @@ import pytz
 from sqlalchemy import func, select
 
 from src.db.database import Session
-from src.db.models import LogOrm, TickerOrm, TraderOrm
+from src.db.models.models import LogOrm, TickerOrm, TraderOrm
 
 
 def get_tickers_activity(db=Session()) -> None:
@@ -111,6 +111,10 @@ def get_tickers_activity(db=Session()) -> None:
         query = select(func.count(TraderOrm.id)).where(TraderOrm.id.in_(subquery))
         log_count = db.execute(query)
         traders = log_count.scalars().first()
+
+        if ticker.currency is None:
+            currency = db.execute(select(LogOrm.currency).where(LogOrm.ticker_id == ticker_id)).scalars().first()
+            ticker.currency = currency
 
         ticker.trades = trades
         ticker.traders = traders

@@ -4,12 +4,12 @@ from markupsafe import Markup
 from sqladmin import ModelView, action
 from sqladmin.helpers import slugify_class_name
 from sqladmin.pagination import Pagination
-from sqlalchemy import delete, func
+from sqlalchemy import and_, delete, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import select
 from starlette.responses import RedirectResponse
 
-from src.db.models import TraderOrm
+from src.db.models.models import TraderOrm
 
 TRADER_BADGE_ICONS = {
     "Верифицирован": "verified",
@@ -22,29 +22,40 @@ TRADER_BADGE_ICONS = {
 
 class TraderAdmin(ModelView, model=TraderOrm):
     column_list = [
-        TraderOrm.watch,
         TraderOrm.badges,
         TraderOrm.id,
         TraderOrm.username,
         TraderOrm.code,
-        TraderOrm.subscribers,
-        TraderOrm.subscribes,
+        TraderOrm.status,
         TraderOrm.portfolio,
         TraderOrm.trades,
-        TraderOrm.status,
         TraderOrm.profit,
-        TraderOrm.last_update,
+        TraderOrm.subscribers,
+        TraderOrm.subscribes,
+        TraderOrm.watch,
         TraderOrm.count,
+        TraderOrm.last_update,
         TraderOrm.app,
     ]
 
     page_size = 100
     list_template = "sqladmin/list-traders.html"
-    column_labels = {"subscribes": "followers", "subscribers": "watches", "trades": "deals"}
+    column_labels = {
+        "count": "N",
+        "last_update": "Update",
+        "id": "ID",
+        "badges": "Badges",
+        "username": "Username",
+        "code": "Code",
+        "status": "Status",
+        "subscribes": "followers",
+        "subscribers": "watch",
+        "trades": "deals",
+        "watch": "",
+    }
     name = "Трейдер"
     name_plural = "Трейдеры"
 
-    column_sortable_list = ["status", "portfolio"]
     column_default_sort = ("id", "desc")
 
     @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
@@ -58,22 +69,24 @@ class TraderAdmin(ModelView, model=TraderOrm):
         TraderOrm.username: lambda trader, _: Markup(
             f"""<a href="https://www.tbank.ru/invest/social/profile/{trader.username}/" target="_blank">{trader.username}</a>"""
         ),
-        TraderOrm.profit: lambda trader, _: f"{trader.profit} %" if trader.profit else "-",
+        TraderOrm.profit: lambda trader, _: f"{trader.profit} %" if trader.profit else "",
         TraderOrm.watch: lambda trader, _: Markup(
-            f"""<img width="20" height="20" src="/static/icons/ico_{trader.watch}.png" />"""
+            f"""<img width="20" style="min-width: 20px;" height="20" src="/static/icons/ico_{trader.watch}.png" />"""
         ),
         TraderOrm.last_update: lambda trader, _: trader.last_update.astimezone(pytz.timezone("Europe/Moscow")).strftime(
-            "%d:%m:%Y.%H:%M:%S"
+            "%d.%m.%Y"
         )
         if trader.last_update
-        else "-",
+        else "",
         TraderOrm.badges: lambda trader, _: Markup(
             f'''<div style="display: flex; gap: 10px;">{
-            "".join([f"""<img width="20" height="20" src="/static/icons/ico_{TRADER_BADGE_ICONS.get(badge)}.png" />""" for badge in trader.badges])}</div>'''
+            "".join([f"""<img style="min-width: 20px;" width="20" height="20" src="/static/icons/ico_{TRADER_BADGE_ICONS.get(badge)}.png" />""" for badge in trader.badges])}</div>'''
         )
         if trader.badges
-        else "-",
+        else "",
     }
+
+    column_sortable_list = ["portfolio", "trades", "profit", "subscribers", "subscribes", "count", "last_update"]
 
     async def list(self, request: Request) -> Pagination:
         page = self.validate_page_number(request.query_params.get("page"), 1)
@@ -82,53 +95,61 @@ class TraderAdmin(ModelView, model=TraderOrm):
         search = request.query_params.get("search", None)
         status = request.query_params.get("status")
         portfolio = request.query_params.get("portfolio")
-        trades = request.query_params.get("trades")
-        profit = request.query_params.get("profit")
-        profit_degres = request.query_params.get("profitDegres")
+        deals_l = request.query_params.get("deals_l")
+        deals_r = request.query_params.get("deals_r")
+        profit_l = request.query_params.get("profit_l")
+        profit_r = request.query_params.get("profit_r")
         watch = request.query_params.get("watch")
 
-        subscribes = request.query_params.get("subscribes")
-        subscribes_degres = request.query_params.get("subscribesDegres")
+        count_l = request.query_params.get("count_l")
+        count_r = request.query_params.get("count_r")
 
-        subscribers = request.query_params.get("subscribers")
-        subscribers_degres = request.query_params.get("subscribesDegrers")
+        subscribes_l = request.query_params.get("subscribes_l")
+        subscribes_r = request.query_params.get("subscribes_r")
+
+        subscribers_l = request.query_params.get("subscribers_l")
+        subscribers_r = request.query_params.get("subscribes_r")
 
         badge = request.query_params.get("badge")
 
+        usernames = [username.lower().strip() for username in request.query_params.get("search", "").split(",")]
+        usernames = list(filter(lambda x: x, usernames))
+
         stmt = self.list_query(request)
+        if usernames:
+            print(usernames, "usernames")
+            stmt = stmt.filter(func.lower(TraderOrm.username).in_(usernames))
 
         if badge:
             stmt = stmt.filter(TraderOrm.badges.contains([badge]))
 
-        if subscribes:
-            if subscribes_degres == "g":
-                stmt = stmt.filter(TraderOrm.subscribes >= int(subscribes))
-            elif subscribes_degres == "l":
-                stmt = stmt.filter(TraderOrm.subscribes <= int(subscribes))
+        if subscribes_l:
+            stmt = stmt.filter(
+                and_(int(subscribes_l) <= TraderOrm.subscribes, TraderOrm.subscribes <= int(subscribes_r))
+            )
 
-        if subscribers:
-            if subscribers_degres == "g":
-                stmt = stmt.filter(TraderOrm.subscribers >= int(subscribers))
-            elif subscribers_degres == "l":
-                stmt = stmt.filter(TraderOrm.subscribers <= int(subscribers))
+        if subscribers_l:
+            stmt = stmt.filter(
+                and_(int(subscribers_l) <= TraderOrm.subscribers, TraderOrm.subscribers <= int(subscribers_r))
+            )
 
         if watch:
             stmt = stmt.filter(TraderOrm.watch == watch)
 
-        if profit:
-            if profit_degres == "g":
-                stmt = stmt.filter(TraderOrm.profit >= float(profit))
-            elif profit_degres == "l":
-                stmt = stmt.filter(TraderOrm.profit <= float(profit))
+        if profit_l:
+            stmt = stmt.filter(and_(float(profit_l) <= TraderOrm.profit, TraderOrm.profit <= float(profit_r)))
 
-        if trades:
-            stmt = stmt.filter(TraderOrm.trades >= int(trades))
+        if deals_l:
+            stmt = stmt.filter(and_(int(deals_l) <= TraderOrm.trades, TraderOrm.trades <= int(deals_r)))
 
         if status:
             stmt = stmt.filter(TraderOrm.status == status)
 
         if portfolio:
             stmt = stmt.filter(TraderOrm.portfolio == portfolio)
+
+        if count_l:
+            stmt = stmt.filter(and_(int(count_l) <= TraderOrm.count, TraderOrm.count <= int(count_r)))
 
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))

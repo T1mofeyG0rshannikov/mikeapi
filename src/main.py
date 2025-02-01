@@ -16,7 +16,6 @@ from src.routes.traders_route import router as traders_router
 async def lifespan(app: FastAPI):
     init_scheduler()
     init_admin(app)
-    init_exc_handlers(app)
     yield
 
 
@@ -27,3 +26,4 @@ app.add_middleware(SessionMiddleware, secret_key=get_admin_config().admin_secret
 
 app.include_router(router=log_router)
 app.include_router(router=traders_router)
+init_exc_handlers(app)

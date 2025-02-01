@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from src.create_traders import TraderStatus
 from src.db.database import SessionLocal
-from src.db.models import TraderOrm, VendorOrm
+from src.db.models.models import TraderOrm, VendorOrm
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
 

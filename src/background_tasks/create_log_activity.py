@@ -4,7 +4,7 @@ import pytz
 from sqlalchemy import func, select
 
 from src.db.database import Session
-from src.db.models import LogActivityOrm, LogOrm
+from src.db.models.models import LogActivityOrm, LogOrm
 
 
 def create_log_activity(db=Session()):
@@ -35,4 +35,3 @@ def create_log_activity(db=Session()):
     activity.last_day += last_hour_count
 
     db.commit()
-    print("log activity updated")

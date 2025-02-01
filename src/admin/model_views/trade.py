@@ -5,9 +5,7 @@ from sqladmin.helpers import slugify_class_name
 from sqlalchemy import delete
 from starlette.responses import RedirectResponse
 
-from src.db.models import (
-    LogOrm,
-)
+from src.db.models.models import LogOrm
 
 
 class LogAdmin(ModelView, model=LogOrm):

@@ -14,3 +14,11 @@ class TraderStatus(StrEnum):
     unactive = "Не активен"
     hidden = "Скрытый"
     blocked = "Заблокированный"
+
+
+class TradefBadge(StrEnum):
+    verified = "Верифицирован"
+    author = "Автор стратегии"
+    Tchoice = "Выбор Т-Инвестиций"
+    popular = "Популярный"
+    helper = "Помощник пульса"

@@ -8,7 +8,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import selectinload
 
 from src.admin.forms import TickerForm
-from src.db.models import TickerOrm
+from src.db.models.models import TickerOrm
 from src.entites.ticker import TICKER_TYPES
 
 
@@ -22,14 +22,12 @@ def get_ticker_type_slug(ticker_type: str) -> str:
 
 class TickerAdmin(ModelView, model=TickerOrm):
     column_list = [
-        # TickerOrm.rare,
-        # TickerOrm.archive,
         TickerOrm.slug,
         TickerOrm.name,
         TickerOrm.type,
         TickerOrm.lot,
         TickerOrm.last_trade_price,
-        TickerOrm.currency,
+        # TickerOrm.currency,
         TickerOrm.end,
         TickerOrm.last_hour,
         TickerOrm.last_hour_traders,
@@ -152,5 +150,6 @@ class TickerAdmin(ModelView, model=TickerOrm):
     column_formatters = {
         TickerOrm.slug: lambda ticker, _: Markup(
             f"""<a href="https://www.tbank.ru/invest/{get_ticker_type_slug(ticker.type)}/{ticker.slug}/" target="_blank">{ticker.slug}</a>"""
-        )
+        ),
+        TickerOrm.last_trade_price: lambda ticker, _: f"{ticker.last_trade_price if ticker.last_trade_price else ''} {ticker.currency if ticker.currency else ''}",
     }

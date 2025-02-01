@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from src.admin.admin import CustomAdmin
 from src.admin.auth import AdminAuth
 from src.admin.config import get_admin_config
+from src.admin.model_views.ping import PingAdmin
 from src.admin.model_views.ticker import TickerAdmin
 from src.admin.model_views.trade import LogAdmin
 from src.admin.model_views.trader import TraderAdmin
@@ -29,3 +30,4 @@ def init_admin(app: FastAPI):
     admin.add_view(LogActivityAdmin)
     admin.add_view(TickerAdmin)
     admin.add_view(SettingsAdmin)
+    admin.add_view(PingAdmin)

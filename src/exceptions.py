@@ -22,3 +22,7 @@ class NotPermittedError(Error):
 
 class InvalidCreateLogRequest(Error):
     pass
+
+
+class UrlNotFound(Error):
+    pass

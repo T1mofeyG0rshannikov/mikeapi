@@ -17,7 +17,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TIMESTAMP
 
@@ -41,6 +41,7 @@ class VendorOrm(Model):
     auth_token = Column(String)
     logs = relationship("LogOrm", back_populates="app")
     traders = relationship("TraderOrm", back_populates="app")
+    pings = relationship("PingOrm", back_populates="app")
 
     def __str__(self) -> str:
         return self.app_id
@@ -238,3 +239,12 @@ class SettingsOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
     log_delay = Column(Integer, default=0)
     rare_tickers_limit = Column(Integer, default=0)
+
+
+class PingOrm(Model):
+    __tablename__ = "pings"
+
+    id = Column(Integer, index=True, primary_key=True)
+    created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))
+    app_id = Column(Integer, ForeignKey("vendors.id"))
+    app = relationship(VendorOrm, back_populates="pings")

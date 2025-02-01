@@ -2,14 +2,14 @@ from datetime import datetime
 
 from sqlalchemy import select
 
-from src.db.models import LogOrm, TickerOrm, TraderOrm, VendorOrm
+from src.db.models.models import LogOrm, TickerOrm, TraderOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 
 class LogRepository(BaseRepository):
     async def create(
         self,
-        app: VendorOrm,
+        app_id: int,
         time: datetime,
         main_server: bool,
         user: TraderOrm,
@@ -19,7 +19,7 @@ class LogRepository(BaseRepository):
         operation: str,
     ) -> LogOrm:
         log = LogOrm(
-            app=app,
+            app_id=app_id,
             time=time,
             main_server=main_server,
             user=user,

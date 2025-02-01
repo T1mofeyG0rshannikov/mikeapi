@@ -1,6 +1,6 @@
 from sqlalchemy import func, select
 
-from src.db.models import TraderOrm, VendorOrm
+from src.db.models.models import TraderOrm, VendorOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 

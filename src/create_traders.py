@@ -1,29 +1,11 @@
-from enum import StrEnum
-from typing import List
-
 from pydantic import BaseModel
 from sqlalchemy import select
 
 from src.db.database import SessionLocal
-from src.db.models import TraderOrm
+from src.db.models.models import TraderOrm
+from src.entites.trader import TraderStatus
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
-
-
-class TraderStatus(StrEnum):
-    active = "Активный"
-    hiden = "Скрытый"
-    banned = "Забаненный"
-    unactive = "Не активен"
-
-
-class TradefBadge(StrEnum):
-    verified = "Верифицирован"
-    author = "Автор стратегии"
-    Tchoice = "Выбор Т-Инвестиций"
-    popular = "Популярный"
-    helper = "Помощник пульса"
-
 
 TRADER_PORTFOLIO = {
     "до 10 000": "<10K",

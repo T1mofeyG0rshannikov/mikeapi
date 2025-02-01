@@ -1,13 +1,15 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, validator
 
 
 class CreateLogRequest(BaseModel):
     app_id: str
-    time: str
     auth_token: str
-    text: str = "clubpravinvest: купил Т по 100 RUB (11.11.2011)"
+    time: str | None = None
+    text: str | None = "clubpravinvest: купил Т по 100 RUB (11.11.2011)"
+    action: str | None = None
 
     @validator("time")
     def validate_time_format(cls, value):
@@ -16,7 +18,3 @@ class CreateLogRequest(BaseModel):
             return value
         except ValueError:
             raise ValueError("Invalid time format. Use DD:MM:YYYY.hh:mm:ss")
-
-
-class APIResponse(BaseModel):
-    status: str
