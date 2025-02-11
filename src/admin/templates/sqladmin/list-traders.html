@@ -54,9 +54,9 @@
         <div class="import" style="display: flex; gap: 15px;display: flex; flex-direction: column; align-items: start; margin-bottom: 15px;">
           <div style="display: flex; gap: 15px;">
             <select class="import-type" style="height: 30px;">
-              <option><a class="dropdown-item" onclick="loadTraders()">Профили</a></option>
-              <option><a class="dropdown-item" onclick="loadUsernames()">Имена</a></option>
-              <option><a class="dropdown-item" onclick="loadSubscribes()">Подписки</a></option>
+              <option><a class="dropdown-item" onclick="loadUsernames()">Имена (pre)</a></option>
+              <option><a class="dropdown-item" onclick="loadTraders()">Профили (new)</a></option>
+              <option><a class="dropdown-item" onclick="loadSubscribes()">Подписки (on)</a></option>
             </select>
             <div>
               <input type="file" id="traders-file">
@@ -66,19 +66,53 @@
         </div>
 
         <script>
+          function clearBuffer(){
+            fetch('/clear-buffer/', {method: "delete"}).then(
+              response => {
+                if (response.ok){
+                  document.querySelector("#buffer-count").innerHTML = '0';
+                }
+              }
+            )
+          }
+        </script>
+
+        <div class="buffer">
+          <span>Буфер: <a id="buffer-count" >{{ request.session.buffer|length }}</a></span>
+          <a><span onclick="clearBuffer()" class="me-1"><i class="fa-solid fa-trash"></i></span></a>
+        </div>
+
+        <style>
+          .buffer{
+            display: flex;
+            gap: 10px;
+            margin-right: 30px;
+          }
+
+          .buffer a{
+            color: rgba(var(--tblr-link-color-rgb), var(--tblr-link-opacity, 1))!important;
+            text-decoration: none;
+          }
+
+          .buffer i{
+            cursor: pointer;
+          }
+        </style>
+
+        <script>
             const fileInput = document.getElementById("traders-file");
             const messageContainer = document.querySelector(".import .message");
 
             function importFile(){
               const type = document.querySelector(".import-type").value;
 
-              if (type == "Профили"){
+              if (type == "Профили (new)"){
                 loadTraders()
               }
-              else if(type == "Имена"){
+              else if(type == "Имена (pre)"){
                 loadUsernames()
               }
-              else if (type == "Подписки"){
+              else if (type == "Подписки (on)"){
                 loadSubscribes()
               }
             }
@@ -196,10 +230,16 @@
               {{ label }}
             </a>
             {% else %}
+            {% if custom_action == "add-to-buffer" %}
+            <a class="dropdown-item" id="action-custom-{{ custom_action }}" href="/admin/trader-orm/action/add-to-buffer/?{{ request.url.query }}">
+              {{ label }}
+            </a>
+            {% else %}
             <a class="dropdown-item" id="action-custom-{{ custom_action }}" href="#"
               data-url="{{ model_view._url_for_action(request, custom_action) }}">
               {{ label }}
             </a>
+            {% endif %}
             {% endif %}
             {% endfor %}
           </div>

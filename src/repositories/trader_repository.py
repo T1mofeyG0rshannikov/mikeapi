@@ -19,8 +19,8 @@ class TraderRepository(BaseRepository):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def create(self, username: str, code: str, watch: str = "new", app: VendorOrm | None = None) -> TraderOrm:
-        trader = TraderOrm(username=username, code=code, watch=watch, app=app)
+    async def create(self, username: str, code: str, watch: str = "new", app_id: int | None = None) -> TraderOrm:
+        trader = TraderOrm(username=username, code=code, watch=watch, app_id=app_id)
         self.db.add(trader)
         await self.db.commit()
         return trader

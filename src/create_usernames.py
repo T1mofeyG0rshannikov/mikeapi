@@ -1,4 +1,5 @@
 from bisect import bisect_left, bisect_right
+from datetime import datetime
 
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -6,6 +7,7 @@ from sqlalchemy import select
 from src.create_traders import TraderStatus
 from src.db.database import SessionLocal
 from src.db.models.models import TraderOrm, VendorOrm
+from src.entites.trader import LoadTraderAction, TraderWatch
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
 
@@ -35,7 +37,12 @@ class AddUsernames:
         return bisect_right(users, user) - bisect_left(users, user)
 
     async def __call__(
-        self, users: list[CreateUsernameDTO], watch: str = "new", app: VendorOrm | None = None, db=SessionLocal()
+        self,
+        users: list[CreateUsernameDTO],
+        watch: str = TraderWatch.pre,
+        app: VendorOrm | None = None,
+        action: str | None = None,
+        db=SessionLocal(),
     ) -> None:
         exist_codes = await self.traders_repository.get_codes()
 
@@ -54,8 +61,13 @@ class AddUsernames:
             else:
                 trader.count = ucount
 
-            trader.watch = watch
             trader.app = app
+
+            if action == LoadTraderAction.subscribes:
+                if trader.watch != TraderWatch.on:
+                    trader.last_update = datetime.utcnow()
+
+                trader.watch = TraderWatch.on
 
         exist_trader_names = [t.username for t in traders]
 

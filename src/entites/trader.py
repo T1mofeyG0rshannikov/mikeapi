@@ -7,6 +7,7 @@ class TraderWatch(StrEnum):
     off = "off"
     raw = "raw"
     bad = "bad"
+    pre = "pre"
 
 
 class TraderStatus(StrEnum):
@@ -22,3 +23,8 @@ class TradefBadge(StrEnum):
     Tchoice = "Выбор Т-Инвестиций"
     popular = "Популярный"
     helper = "Помощник пульса"
+
+
+class LoadTraderAction(StrEnum):
+    profiles = "profiles"
+    subscribes = "subscribes"

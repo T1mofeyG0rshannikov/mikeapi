@@ -83,11 +83,11 @@ async def create_log(
             code = generate_code()
             ind = get_code_index(exist_codes, code)
 
-        user = await trader_repository.create(username=username, code=code, watch=TraderWatch.on, app=vendor)
+        user = await trader_repository.create(username=username, code=code, watch=TraderWatch.on, app_id=vendor.id)
     else:
         if user.watch != TraderWatch.on:
             user.watch = TraderWatch.on
-            user.app = vendor
+            user.app_id = vendor.id
             user = await trader_repository.update(user)
 
     moscow_tz = pytz.timezone("Europe/Moscow")

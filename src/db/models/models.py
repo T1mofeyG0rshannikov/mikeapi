@@ -93,17 +93,13 @@ class TraderOrm(Model):
     app_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
     app = relationship(VendorOrm, back_populates="traders")
     last_update = Column(TIMESTAMP(timezone=True), nullable=True)
+    scanned = Column(Boolean, default=False)
 
     watches = TraderWatch
     statuses = TraderStatus
 
     def __str__(self) -> str:
         return self.username
-
-
-@event.listens_for(TraderOrm, "before_update")
-def receive_before_update(mapper, connection, target):
-    target.last_update = datetime.utcnow()
 
 
 class LogOrm(Model):
@@ -124,17 +120,36 @@ class LogOrm(Model):
     ticker_id = Column(Integer, ForeignKey("tickers.id"))
     ticker = relationship("TickerOrm", back_populates="logs")
 
+    """@hybrid_property
+    def delayed(self, db=Session()):
+        query = select(SettingsOrm)
+        settings = db.execute(query).scalars().first()
+        if settings:
+            moscow_tz = pytz.timezone('Europe/Moscow') # Укажите свой часовой пояс
+            delay = settings.log_delay
+            created_at_datetime = datetime.fromtimestamp(self.created_at, tz=moscow_tz).astimezone(pytz.utc)
+            time_datetime = datetime.fromtimestamp(self.time, tz=moscow_tz).astimezone(pytz.utc)
+            dif = created_at_datetime - time_datetime
+            if dif.total_seconds() >= delay:
+                return True
+
+        return False"""
+
     @hybrid_property
     def delayed(self, db=Session()):
         query = select(SettingsOrm)
-        settings = db.execute(query).scalars.first()
-        if settings:
-            delay = settings.delay
+        settings = db.execute(query).scalars().first()
 
-            if self.created_at - self.time >= delay:
-                return True
+        if self.created_at and self.time:
+            return (self.created_at - self.time).total_seconds() >= settings.log_delay
+        return None
 
-        return False
+    @delayed.expression
+    def delayed(cls, db=Session()):
+        query = select(SettingsOrm)
+        settings = db.execute(query).scalars().first()
+
+        return func.extract("epoch", cls.created_at) - func.extract("epoch", cls.time) >= settings.log_delay
 
 
 class LogActivityOrm(Model):

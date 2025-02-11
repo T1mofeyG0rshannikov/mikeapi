@@ -4,7 +4,7 @@ from functools import wraps
 from io import StringIO
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Response, UploadFile
 from starlette.requests import Request
 
 from src.auth.jwt_processor import JwtProcessor
@@ -18,7 +18,7 @@ from src.dependencies import (
     get_user_repository,
     get_vendor_repository,
 )
-from src.entites.trader import TraderWatch
+from src.entites.trader import LoadTraderAction, TraderWatch
 from src.exceptions import NotPermittedError
 from src.repositories.user_repository import UserRepository
 from src.repositories.vendor_repository import VendorRepository
@@ -118,4 +118,11 @@ async def add_subscribes(
     txt_data=Depends(get_txt_file),
 ):
     vendor = await vendor_repository.get(id="myapp")
-    return await create_usernames(users=txt_data, watch=TraderWatch.on, app=vendor)
+    return await create_usernames(users=txt_data, watch=TraderWatch.on, action=LoadTraderAction.subscribes, app=vendor)
+
+
+@router.delete("/clear-buffer/")
+@admin_required
+async def clear_buffer(user: Annotated[UserOrm, Depends(get_user)], request: Request):
+    request.session["buffer"].clear()
+    return Response(status_code=200)

@@ -1,13 +1,73 @@
+from datetime import datetime
+import json
+import time
+import warnings
+from enum import Enum
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    no_type_check,
+)
+
+from collections.abc import AsyncGenerator, Callable, Sequence
+from urllib.parse import urlencode
+
+import anyio
 import pytz
 from fastapi.requests import Request
 from markupsafe import Markup
 from sqladmin import ModelView, action
-from sqladmin.helpers import slugify_class_name
+from sqladmin._queries import Query
+from sqladmin._types import MODEL_ATTR
+from sqladmin.ajax import create_ajax_loader
+from sqladmin.exceptions import InvalidModelError
+from sqladmin.formatters import BASE_FORMATTERS
+from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
+from sqladmin.helpers import (
+    Writer,
+    get_object_identifier,
+    get_primary_keys,
+    object_identifier_values,
+    prettify_class_name,
+    secure_filename,
+    slugify_class_name,
+    stream_to_csv,
+)
+
+# stream_to_csv,
 from sqladmin.pagination import Pagination
-from sqlalchemy import and_, delete, func
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql.expression import select
-from starlette.responses import RedirectResponse
+from sqladmin.templating import Jinja2Templates
+from sqlalchemy import (
+    Column,
+    String,
+    and_,
+    asc,
+    cast,
+    delete,
+    desc,
+    func,
+    inspect,
+    or_,
+    update,
+)
+from sqlalchemy.exc import NoInspectionAvailable
+from sqlalchemy.orm import selectinload, sessionmaker
+from sqlalchemy.orm.exc import DetachedInstanceError
+from sqlalchemy.sql.elements import ClauseElement
+from sqlalchemy.sql.expression import Select, select
+from starlette.datastructures import URL
+from starlette.exceptions import HTTPException
+from starlette.requests import Request
+from starlette.responses import RedirectResponse, StreamingResponse
+from wtforms import Field, Form
+from wtforms.fields.core import UnboundField
 
 from src.db.models.models import TraderOrm
 
@@ -22,6 +82,7 @@ TRADER_BADGE_ICONS = {
 
 class TraderAdmin(ModelView, model=TraderOrm):
     column_list = [
+        TraderOrm.watch,
         TraderOrm.badges,
         TraderOrm.id,
         TraderOrm.username,
@@ -32,7 +93,6 @@ class TraderAdmin(ModelView, model=TraderOrm):
         TraderOrm.profit,
         TraderOrm.subscribers,
         TraderOrm.subscribes,
-        TraderOrm.watch,
         TraderOrm.count,
         TraderOrm.last_update,
         TraderOrm.app,
@@ -58,12 +118,79 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
     column_default_sort = ("id", "desc")
 
+    column_export_list = ["username"]
+
+    async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
+        model.last_update = datetime.utcnow()
+
+    async def get_model_objects(self, request: Request, limit: int | None = 0) -> list[Any]:
+        # For unlimited rows this should pass None
+        # limit = None if limit == 0 else limit
+        buffer = request.session.get("buffer", [])
+        stmt = select(TraderOrm).where(TraderOrm.username.in_(buffer))
+
+        rows = await self._run_query(stmt)
+        return rows
+
+    def sort_query(self, stmt: Select, request: Request) -> Select:
+        """
+        A method that is called every time the fields are sorted
+        and that can be customized.
+        By default, sorting takes place by default fields.
+
+        The 'sortBy' and 'sort' query parameters are available in this request context.
+        """
+        sort_by = request.query_params.get("sortBy", None)
+        sort = request.query_params.get("sort", "asc")
+
+        if sort_by:
+            sort_fields = [(sort_by, sort == "desc")]
+        else:
+            sort_fields = self._get_default_sort()
+
+        for sort_field, is_desc in sort_fields:
+            model = self.model
+
+            parts = self._get_prop_name(sort_field).split(".")
+            for part in parts[:-1]:
+                model = getattr(model, part).mapper.class_
+                stmt = stmt.join(model)
+
+            if is_desc:
+                stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), desc(getattr(model, parts[-1])))
+            else:
+                stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), asc(getattr(model, parts[-1])))
+
+        return stmt
+
     @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
     async def delete_all_action(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
             await session.execute(delete(self.model))
             await session.commit()
             return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
+
+    @action(name="add_to_buffer", label="Добавить в буфер все")
+    async def add_to_buffer(self, request: Request):
+        request.url.remove_query_params("pks")
+        stmt = await self.raw_list(request)
+        rows = await self._run_query(stmt)
+
+        request.session["buffer"] = list(set(request.session.get("buffer", [])) | {trader.username for trader in rows})
+
+        return RedirectResponse(
+            url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303
+        )
+
+    @action(name="scanned", label="Пометить Scanned")
+    async def scanned(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            pks = [int(i) for i in request.query_params.get("pks", "").split(",")]
+            await session.execute(update(self.model).where(TraderOrm.id.in_(pks)).values(scanned=True))
+            await session.commit()
+            return RedirectResponse(
+                url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303
+            )
 
     column_formatters = {
         TraderOrm.username: lambda trader, _: Markup(
@@ -84,14 +211,16 @@ class TraderAdmin(ModelView, model=TraderOrm):
         )
         if trader.badges
         else "",
+        TraderOrm.subscribers: lambda trader, _: Markup(
+            f"""<a>{trader.subscribers if trader.subscribers else ""}</a>{'<i style="margin-left: 10px;" class="fa fa-check text-success"></i>' if trader.scanned else ''}"""
+        ),
     }
 
     column_sortable_list = ["portfolio", "trades", "profit", "subscribers", "subscribes", "count", "last_update"]
 
-    async def list(self, request: Request) -> Pagination:
-        page = self.validate_page_number(request.query_params.get("page"), 1)
-        page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
-        page_size = min(page_size or self.page_size, max(self.page_size_options))
+    async def raw_list(self, request: Request):
+        # page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
+        # page_size = min(page_size or self.page_size, max(self.page_size_options))
         search = request.query_params.get("search", None)
         status = request.query_params.get("status")
         portfolio = request.query_params.get("portfolio")
@@ -114,10 +243,8 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
         usernames = [username.lower().strip() for username in request.query_params.get("search", "").split(",")]
         usernames = list(filter(lambda x: x, usernames))
-
         stmt = self.list_query(request)
         if usernames:
-            print(usernames, "usernames")
             stmt = stmt.filter(func.lower(TraderOrm.username).in_(usernames))
 
         if badge:
@@ -158,13 +285,19 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
-            count = await self.count(request, select(func.count()).select_from(stmt))
-        else:
-            count = await self.count(request, select(func.count()).select_from(stmt))
+
+        return stmt
+
+    async def list(self, request: Request) -> Pagination:
+        stmt = await self.raw_list(request)
+        page_size = self.validate_page_number(request.query_params.get("pageSize"), self.page_size)
+        page = self.validate_page_number(request.query_params.get("page"), 1)
+
+        count = await self.count(request, select(func.count()).select_from(stmt))
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
-
+        print(rows)
         pagination = Pagination(
             rows=rows,
             page=page,

@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 from sqlalchemy import select
 
 from src.db.database import SessionLocal
 from src.db.models.models import TraderOrm
-from src.entites.trader import TraderStatus
+from src.entites.trader import LoadTraderAction, TraderStatus, TraderWatch
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
 
@@ -84,6 +86,10 @@ class CreateTraders:
             trader.trades = traders_data[ind].trades
             trader.profit = traders_data[ind].profit
             trader.badges = traders_data[ind].badges
+
+            if trader.watch == TraderWatch.pre:
+                trader.last_update = datetime.utcnow()
+                trader.watch = TraderWatch.new
 
         exist_trader_names = [t.username for t in traders]
 
