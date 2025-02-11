@@ -263,3 +263,10 @@ class PingOrm(Model):
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))
     app_id = Column(Integer, ForeignKey("vendors.id"))
     app = relationship(VendorOrm, back_populates="pings")
+
+
+class TradersBuffer(Model):
+    __tablename__ = "buffer"
+    
+    id = Column(Integer, index=True, primary_key=True)
+    usernames = Column(ARRAY(String))

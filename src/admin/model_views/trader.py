@@ -1,7 +1,8 @@
-from datetime import datetime
 import json
 import time
 import warnings
+from collections.abc import AsyncGenerator, Callable, Sequence
+from datetime import datetime
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -15,8 +16,6 @@ from typing import (
     Union,
     no_type_check,
 )
-
-from collections.abc import AsyncGenerator, Callable, Sequence
 from urllib.parse import urlencode
 
 import anyio
@@ -69,7 +68,7 @@ from starlette.responses import RedirectResponse, StreamingResponse
 from wtforms import Field, Form
 from wtforms.fields.core import UnboundField
 
-from src.db.models.models import TraderOrm
+from src.db.models.models import TraderOrm, TradersBuffer
 
 TRADER_BADGE_ICONS = {
     "Верифицирован": "verified",
@@ -124,13 +123,18 @@ class TraderAdmin(ModelView, model=TraderOrm):
         model.last_update = datetime.utcnow()
 
     async def get_model_objects(self, request: Request, limit: int | None = 0) -> list[Any]:
-        # For unlimited rows this should pass None
-        # limit = None if limit == 0 else limit
-        buffer = request.session.get("buffer", [])
-        stmt = select(TraderOrm).where(TraderOrm.username.in_(buffer))
+        async with self.session_maker(expire_on_commit=False) as session:
+            buffer = await session.execute(select(TradersBuffer))
+            buffer = buffer.scalars().first()
+            print(buffer)
+            print(buffer.usernames)
+            if buffer:
+                if buffer.usernames:
+                    stmt = select(TraderOrm).where(TraderOrm.username.in_(buffer.usernames))
 
-        rows = await self._run_query(stmt)
-        return rows
+                    rows = await self._run_query(stmt)
+                    return rows
+            return []
 
     def sort_query(self, stmt: Select, request: Request) -> Select:
         """
@@ -172,15 +176,30 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
     @action(name="add_to_buffer", label="Добавить в буфер все")
     async def add_to_buffer(self, request: Request):
-        request.url.remove_query_params("pks")
-        stmt = await self.raw_list(request)
-        rows = await self._run_query(stmt)
+        async with self.session_maker(expire_on_commit=False) as session:
+            request.url.remove_query_params("pks")
+            stmt = await self.raw_list(request)
+            rows = await self._run_query(stmt)
 
-        request.session["buffer"] = list(set(request.session.get("buffer", [])) | {trader.username for trader in rows})
+            buffer = await session.execute(select(TradersBuffer))
+            buffer = buffer.scalars().first()
+            if not buffer:
+                buffer = TradersBuffer(usernames=[])
+                session.add(buffer)
+                await session.commit()
 
-        return RedirectResponse(
-            url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303
-        )
+            if buffer.usernames is None:
+                buffer.usernames = []
+
+            buffer_usernames = list(set(buffer.usernames) | set([trader.username for trader in rows]))
+            buffer.usernames = buffer_usernames
+
+            request.session["buffer_size"] = len(buffer_usernames)
+
+            await session.commit()
+            return RedirectResponse(
+                url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303
+            )
 
     @action(name="scanned", label="Пометить Scanned")
     async def scanned(self, request: Request):
@@ -297,7 +316,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
-        print(rows)
+
         pagination = Pagination(
             rows=rows,
             page=page,

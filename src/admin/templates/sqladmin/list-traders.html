@@ -78,7 +78,7 @@
         </script>
 
         <div class="buffer">
-          <span>Буфер: <a id="buffer-count" >{{ request.session.buffer|length }}</a></span>
+          <span>Буфер: <a id="buffer-count" >{% if request.session.buffer_size %}{{ request.session.buffer_size }}{% else %}{{ 0 }}{% endif %}</a></span>
           <a><span onclick="clearBuffer()" class="me-1"><i class="fa-solid fa-trash"></i></span></a>
         </div>
 
