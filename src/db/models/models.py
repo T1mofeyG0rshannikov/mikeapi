@@ -267,6 +267,13 @@ class PingOrm(Model):
 
 class TradersBuffer(Model):
     __tablename__ = "buffer"
-    
+
     id = Column(Integer, index=True, primary_key=True)
     usernames = Column(ARRAY(String))
+
+
+class UnsuccessLog(Model):
+    __tablename__ = "unsuccesslog"
+
+    id = Column(Integer, index=True, primary_key=True)
+    body = Column(String)

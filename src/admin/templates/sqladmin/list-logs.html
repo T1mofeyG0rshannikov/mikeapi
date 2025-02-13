@@ -41,6 +41,7 @@
     <div class="card-body border-bottom py-3">
       <div class="d-flex justify-content-between">
         <div class="dropdown col-4">
+          <div style="display: flex; gap: 15px; align-items: center;">
           <button {% if not model_view.can_delete and not model_view._custom_actions_in_list %} disabled {% endif %}
             class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false">
@@ -68,6 +69,36 @@
             {% endfor %}
           </div>
           {% endif %}
+
+          <div style="min-width: 130px;">
+            <label>
+              <input type="checkbox" id="delayed" {% if request.query_params.get("delayed", "false") == "true" %}checked{% endif %}  onchange="chechboxClicked(this)">
+              Задержки
+            </label>
+          </div>
+          </div>
+
+          <script>
+
+            function addParams(list){
+              const currentUrl = new URL(window.location.href);
+              for (let param of list){
+                const [key, value] = param;
+                currentUrl.searchParams.set(key, value);
+              }
+              window.location.href = currentUrl.toString();
+            }
+            function chechboxClicked(chechbox){
+              event.preventDefault();
+              const field = $(chechbox).attr("id");
+              addParam(field, chechbox.checked);
+            }
+            function addParam(key, value){
+              const currentUrl = new URL(window.location.href);
+              currentUrl.searchParams.set(key, value);
+              window.location.href = currentUrl.toString();
+            }
+          </script>
         </div>
         {% if model_view.column_searchable_list %}
         <div class="col-md-4 text-muted">

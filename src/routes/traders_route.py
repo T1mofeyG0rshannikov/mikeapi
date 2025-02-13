@@ -5,26 +5,28 @@ from io import StringIO
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile
+from sqlalchemy import delete, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
-from src.dependencies import get_db
+
 from src.auth.jwt_processor import JwtProcessor
+from src.celery import create_usernames_task
 from src.create_traders import CreateTraders
 from src.create_usernames import AddUsernames, CreateUsernameDTO
-from src.db.models.models import UserOrm
+from src.db.models.models import TradersBuffer, UserOrm
 from src.dependencies import (
     get_create_traders,
     get_create_usernames,
+    get_db,
     get_jwt_processor,
     get_user_repository,
     get_vendor_repository,
 )
 from src.entites.trader import LoadTraderAction, TraderWatch
 from src.exceptions import NotPermittedError
+from src.repositories.trader_repository import TraderRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.vendor_repository import VendorRepository
-from sqlalchemy import select, update, delete
-from src.db.models.models import TradersBuffer
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="", tags=["traders"])
 
@@ -82,14 +84,7 @@ async def get_txt_file(
         if len(line) > 1:
             strings.append(line)
 
-    users = []
-
-    for i in range(0, len(strings) // 2, 2):
-        users.append(CreateUsernameDTO(username=strings[i], data=strings[i + 1]))
-
-    users = sorted(users, key=lambda u: u.username)
-
-    return users
+    return strings
 
 
 @router.post("/traders/")
@@ -109,7 +104,9 @@ async def add_usernames(
     create_usernames: Annotated[AddUsernames, Depends(get_create_usernames)],
     txt_data=Depends(get_txt_file),
 ):
-    return await create_usernames(txt_data)
+    print(type(txt_data))
+    create_usernames_task.delay(txt_data)
+    # background_tasks.add_task(create_usernames, txt_data)
 
 
 @router.post("/subscribes/")
@@ -126,9 +123,11 @@ async def add_subscribes(
 
 @router.delete("/clear-buffer/")
 @admin_required
-async def clear_buffer(user: Annotated[UserOrm, Depends(get_user)], request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
-    await db.execute(delete(TradersBuffer))   
+async def clear_buffer(
+    user: Annotated[UserOrm, Depends(get_user)], request: Request, db: Annotated[AsyncSession, Depends(get_db)]
+):
+    await db.execute(delete(TradersBuffer))
     await db.commit()
-    request.session['buffer_size'] = 0
-    
+    request.session["buffer_size"] = 0
+
     return Response(status_code=200)

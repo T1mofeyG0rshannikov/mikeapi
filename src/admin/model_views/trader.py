@@ -126,8 +126,6 @@ class TraderAdmin(ModelView, model=TraderOrm):
         async with self.session_maker(expire_on_commit=False) as session:
             buffer = await session.execute(select(TradersBuffer))
             buffer = buffer.scalars().first()
-            print(buffer)
-            print(buffer.usernames)
             if buffer:
                 if buffer.usernames:
                     stmt = select(TraderOrm).where(TraderOrm.username.in_(buffer.usernames))
@@ -170,7 +168,12 @@ class TraderAdmin(ModelView, model=TraderOrm):
     @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
     async def delete_all_action(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
-            await session.execute(delete(self.model))
+            stmt = await self.raw_list(request)
+            stmt = await session.execute(stmt)
+            stmt = stmt.scalars().all()
+            ids = [user.id for user in stmt]
+            for i in range(0, len(ids), 5000):
+                await session.execute(delete(TraderOrm).where(TraderOrm.id.in_(ids[i : i + 5000])))
             await session.commit()
             return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
 
@@ -191,7 +194,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
             if buffer.usernames is None:
                 buffer.usernames = []
 
-            buffer_usernames = list(set(buffer.usernames) | set([trader.username for trader in rows]))
+            buffer_usernames = list(set(buffer.usernames) | {trader.username for trader in rows})
             buffer.usernames = buffer_usernames
 
             request.session["buffer_size"] = len(buffer_usernames)
@@ -225,8 +228,8 @@ class TraderAdmin(ModelView, model=TraderOrm):
         if trader.last_update
         else "",
         TraderOrm.badges: lambda trader, _: Markup(
-            f'''<div style="display: flex; gap: 10px;">{
-            "".join([f"""<img style="min-width: 20px;" width="20" height="20" src="/static/icons/ico_{TRADER_BADGE_ICONS.get(badge)}.png" />""" for badge in trader.badges])}</div>'''
+            f'''<div style="display: flex;">{
+            "".join([f"""<img style="min-width: 20px; margin-left: -6px; z-index: {100 - ind};" width="20" height="20" src="/static/icons/ico_{TRADER_BADGE_ICONS.get(badge)}.png" />""" for ind, badge in enumerate(trader.badges)])}</div>'''
         )
         if trader.badges
         else "",
@@ -237,9 +240,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
     column_sortable_list = ["portfolio", "trades", "profit", "subscribers", "subscribes", "count", "last_update"]
 
-    async def raw_list(self, request: Request):
-        # page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
-        # page_size = min(page_size or self.page_size, max(self.page_size_options))
+    async def raw_list(self, request: Request, stmt=None):
         search = request.query_params.get("search", None)
         status = request.query_params.get("status")
         portfolio = request.query_params.get("portfolio")
@@ -256,37 +257,57 @@ class TraderAdmin(ModelView, model=TraderOrm):
         subscribes_r = request.query_params.get("subscribes_r")
 
         subscribers_l = request.query_params.get("subscribers_l")
-        subscribers_r = request.query_params.get("subscribes_r")
+        subscribers_r = request.query_params.get("subscribers_r")
 
         badge = request.query_params.get("badge")
 
         usernames = [username.lower().strip() for username in request.query_params.get("search", "").split(",")]
         usernames = list(filter(lambda x: x, usernames))
-        stmt = self.list_query(request)
+        if stmt is None:
+            stmt = self.list_query(request)
+
         if usernames:
             stmt = stmt.filter(func.lower(TraderOrm.username).in_(usernames))
 
         if badge:
             stmt = stmt.filter(TraderOrm.badges.contains([badge]))
 
+        subscribes_filters = and_()
         if subscribes_l:
-            stmt = stmt.filter(
-                and_(int(subscribes_l) <= TraderOrm.subscribes, TraderOrm.subscribes <= int(subscribes_r))
+            subscribes_filters &= and_(
+                int(subscribes_l) <= TraderOrm.subscribes, TraderOrm.subscribes <= int(subscribes_r)
             )
+        if subscribes_r:
+            subscribes_filters &= and_(TraderOrm.subscribes <= int(subscribes_r))
 
+        stmt = stmt.filter(subscribes_filters)
+
+        subscribers_filters = and_()
         if subscribers_l:
-            stmt = stmt.filter(
-                and_(int(subscribers_l) <= TraderOrm.subscribers, TraderOrm.subscribers <= int(subscribers_r))
-            )
+            subscribers_filters &= and_(int(subscribers_l) <= TraderOrm.subscribers)
+        if subscribers_r:
+            subscribers_filters &= and_(TraderOrm.subscribers <= int(subscribers_r))
+
+        stmt = stmt.filter(subscribers_filters)
 
         if watch:
             stmt = stmt.filter(TraderOrm.watch == watch)
 
+        profit_filters = and_()
         if profit_l:
-            stmt = stmt.filter(and_(float(profit_l) <= TraderOrm.profit, TraderOrm.profit <= float(profit_r)))
+            profit_filters &= and_(float(profit_l) <= TraderOrm.profit)
+        if profit_r:
+            profit_filters &= and_(TraderOrm.profit <= float(profit_r))
 
+        stmt = stmt.filter(profit_filters)
+
+        deals_filters = and_()
         if deals_l:
-            stmt = stmt.filter(and_(int(deals_l) <= TraderOrm.trades, TraderOrm.trades <= int(deals_r)))
+            deals_filters &= and_(int(deals_l) <= TraderOrm.trades)
+        if deals_r:
+            deals_filters &= and_(TraderOrm.trades <= int(deals_r))
+
+        stmt = stmt.filter(deals_filters)
 
         if status:
             stmt = stmt.filter(TraderOrm.status == status)
@@ -294,13 +315,16 @@ class TraderAdmin(ModelView, model=TraderOrm):
         if portfolio:
             stmt = stmt.filter(TraderOrm.portfolio == portfolio)
 
+        count_filters = and_()
         if count_l:
-            stmt = stmt.filter(and_(int(count_l) <= TraderOrm.count, TraderOrm.count <= int(count_r)))
+            count_filters &= and_(int(count_l) <= TraderOrm.count)
+        if count_r:
+            count_filters &= and_(TraderOrm.count <= int(count_r))
+
+        stmt = stmt.filter(count_filters)
 
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
-
-        stmt = self.sort_query(stmt, request)
 
         if search:
             stmt = self.search_query(stmt=stmt, term=search)
@@ -309,6 +333,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
     async def list(self, request: Request) -> Pagination:
         stmt = await self.raw_list(request)
+        stmt = self.sort_query(stmt, request)
         page_size = self.validate_page_number(request.query_params.get("pageSize"), self.page_size)
         page = self.validate_page_number(request.query_params.get("page"), 1)
 

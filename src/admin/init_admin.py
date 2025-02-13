@@ -7,6 +7,7 @@ from src.admin.model_views.ping import PingAdmin
 from src.admin.model_views.ticker import TickerAdmin
 from src.admin.model_views.trade import LogAdmin
 from src.admin.model_views.trader import TraderAdmin
+from src.admin.model_views.unsuccess_log import UnsuccesslogAdmin
 from src.admin.views import (
     APIUrlsAdmin,
     LogActivityAdmin,
@@ -31,3 +32,4 @@ def init_admin(app: FastAPI):
     admin.add_view(TickerAdmin)
     admin.add_view(SettingsAdmin)
     admin.add_view(PingAdmin)
+    admin.add_view(UnsuccesslogAdmin)

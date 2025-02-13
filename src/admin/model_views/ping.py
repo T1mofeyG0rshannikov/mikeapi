@@ -15,3 +15,7 @@ class PingAdmin(ModelView, model=PingOrm):
             "%d.%m.%Y %H:%M:%S"
         )
     }
+
+    column_default_sort = ("id", "desc")
+
+    page_size = 100

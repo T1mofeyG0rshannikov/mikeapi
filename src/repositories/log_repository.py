@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import select
 
-from src.db.models.models import LogOrm, TickerOrm, TraderOrm
+from src.db.models.models import LogOrm, TickerOrm, TraderOrm, UnsuccessLog
 from src.repositories.base_reposiotory import BaseRepository
 
 
@@ -44,3 +44,8 @@ class LogRepository(BaseRepository):
         await self.db.commit()
 
         return ticker
+
+    async def create_unsuccesslog(self, body: str) -> None:
+        log = UnsuccessLog(body=body)
+        self.db.add(log)
+        await self.db.commit()

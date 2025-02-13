@@ -225,13 +225,20 @@
             {% endif %}
             {% for custom_action, label in model_view._custom_actions_in_list.items() %}
             {% if custom_action in model_view._custom_actions_confirmation %}
-            <a class="dropdown-item" id="action-customconfirm-{{ custom_action }}" href="#" data-bs-toggle="modal"
+            {% if custom_action == "delete-all" %}
+            <a class="dropdown-item" id="action-customconfirm-{{ custom_action }}" href="/admin/trader-orm/action/{{ custom_action }}/?{{ request.url.query }}" data-bs-toggle="modal"
               data-bs-target="#modal-confirmation-{{ custom_action }}">
               {{ label }}
             </a>
             {% else %}
+            <a class="dropdown-item" id="action-customconfirm-{{ custom_action }}" href="#" data-bs-toggle="modal"
+              data-bs-target="#modal-confirmation-{{ custom_action }}">
+              {{ label }}
+            </a>
+            {% endif %}
+            {% else %}
             {% if custom_action == "add-to-buffer" %}
-            <a class="dropdown-item" id="action-custom-{{ custom_action }}" href="/admin/trader-orm/action/add-to-buffer/?{{ request.url.query }}">
+            <a class="dropdown-item" id="action-custom-{{ custom_action }}" href="/admin/trader-orm/action/{{ custom_action }}/?{{ request.url.query }}">
               {{ label }}
             </a>
             {% else %}
