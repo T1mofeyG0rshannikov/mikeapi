@@ -79,8 +79,9 @@ class LogAdmin(ModelView, model=LogOrm):
             delayed = True
         if delayed == "false":
             delayed = False
-
-        stmt = self.list_query(request).filter(LogOrm.delayed == delayed)
+            
+        if delayed:
+            stmt = self.list_query(request).filter(LogOrm.delayed == delayed)
 
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
@@ -94,17 +95,12 @@ class LogAdmin(ModelView, model=LogOrm):
         page = self.validate_page_number(request.query_params.get("page"), 1)
         page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
         page_size = min(page_size or self.page_size, max(self.page_size_options))
-        search = request.query_params.get("search", None)
 
         stmt = await self.raw_list(request)
 
         stmt = self.sort_query(stmt, request)
 
-        if search:
-            stmt = self.search_query(stmt=stmt, term=search)
-            count = await self.count(request, select(func.count()).select_from(stmt))
-        else:
-            count = await self.count(request)
+        count = await self.count(request, select(func.count()).select_from(stmt))
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)

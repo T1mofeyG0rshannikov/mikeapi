@@ -85,7 +85,7 @@ class AddUsernames:
 
         exist_trader_names = [t.username for t in traders]
 
-        user_names = {user for user in users if user.username not in exist_trader_names}
+        user_names = set([user for user in users if user.username not in exist_trader_names])
 
         users_to_create = []
         for user in user_names:

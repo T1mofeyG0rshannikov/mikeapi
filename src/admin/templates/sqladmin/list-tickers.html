@@ -39,8 +39,8 @@
       </div>
     </div>
     <div class="card-body border-bottom py-3">
-      <div class="d-flex justify-content-between">
-        <div class="dropdown col-4">
+      <div class="d-flex">
+        <div class="dropdown col-4" style="width: 120px;">
           <script>
             function filter(){
               const trades = document.getElementById("trades").value;
@@ -89,14 +89,38 @@
             }
           </script>
 
-          <div style="display: flex; gap: 15px; align-items: center;">
-
-            <button {% if not model_view.can_delete and not model_view._custom_actions_in_list %} disabled {% endif %}
+          <button {% if not model_view.can_delete and not model_view._custom_actions_in_list %} disabled {% endif %}
             class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false">
             Actions
           </button>
+          {% if model_view.can_delete or model_view._custom_actions_in_list %}
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            {% if model_view.can_delete %}
+            <a class="dropdown-item" id="action-delete" href="#" data-name="{{ model_view.name }}"
+              data-url="{{ url_for('admin:delete', identity=model_view.identity) }}" data-bs-toggle="modal"
+              data-bs-target="#modal-delete">Delete selected items</a>
+            {% endif %}
+            {% for custom_action, label in model_view._custom_actions_in_list.items() %}
+            {% if custom_action in model_view._custom_actions_confirmation %}
+            {% if custom_action == "delete-all" %}
+            <a class="dropdown-item" id="action-customconfirm-{{ custom_action }}" href="/admin/ticker-orm/action/{{ custom_action }}/?{{ request.url.query }}" data-bs-toggle="modal"
+              data-bs-target="#modal-confirmation-{{ custom_action }}">
+              {{ label }}
+            </a>
+            {% else %}
+            <a class="dropdown-item" id="action-custom-{{ custom_action }}" href="#"
+              data-url="{{ model_view._url_for_action(request, custom_action) }}">
+              {{ label }}
+            </a>
+            {% endif %}
+            {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
 
+        <div style="display: flex; gap: 15px; align-items: center;">
           <div style="min-width: 130px;">
             <label>
               <input type="checkbox" id="rare" {% if request.query_params.get("rare", "false") == "true" %}checked{% endif %}  onchange="chechboxClicked(this)">
@@ -111,29 +135,7 @@
             </label>
           </div>
         </div>
-          {% if model_view.can_delete or model_view._custom_actions_in_list %}
-          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            {% if model_view.can_delete %}
-            <a class="dropdown-item" id="action-delete" href="#" data-name="{{ model_view.name }}"
-              data-url="{{ url_for('admin:delete', identity=model_view.identity) }}" data-bs-toggle="modal"
-              data-bs-target="#modal-delete">Delete selected items</a>
-            {% endif %}
-            {% for custom_action, label in model_view._custom_actions_in_list.items() %}
-            {% if custom_action in model_view._custom_actions_confirmation %}
-            <a class="dropdown-item" id="action-customconfirm-{{ custom_action }}" href="#" data-bs-toggle="modal"
-              data-bs-target="#modal-confirmation-{{ custom_action }}">
-              {{ label }}
-            </a>
-            {% else %}
-            <a class="dropdown-item" id="action-custom-{{ custom_action }}" href="#"
-              data-url="{{ model_view._url_for_action(request, custom_action) }}">
-              {{ label }}
-            </a>
-            {% endif %}
-            {% endfor %}
-          </div>
-          {% endif %}
-        </div>
+
         {% if model_view.column_searchable_list %}
         <div class="col-md-4 text-muted">
           <div class="input-group">

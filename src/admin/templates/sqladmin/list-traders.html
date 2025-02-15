@@ -321,7 +321,7 @@
         Статус
         <div>
           <select style="width: 120px;" id="status">
-            <option {% if request.query_params.get('portfolio', '') == "" %}selected{% endif %} value="">Все</option>
+            <option {% if request.query_params.get('status', '') == "" %}selected{% endif %} value="">Все</option>
             {% for status in model_view.model.statuses %}
               <option {% if request.query_params.get('status') == status %}selected{% endif %} value="{{ status }}">{{ status }}</option>
             {% endfor %}
@@ -455,6 +455,7 @@
 
             const count_l = document.getElementById("count_l").value;
             const count_r = document.getElementById("count_r").value;
+            const status = document.getElementById("status").value;
 
             addParams([
               ['watch', watch],
@@ -462,6 +463,7 @@
               ['deals_r', trades_r],
               ['profit_l', profit_l],
               ['profit_r', profit_r],
+              ['status', status],
 
               ['subscribes_l', subscribes_l],
               ['subscribes_r', subscribes_r],
