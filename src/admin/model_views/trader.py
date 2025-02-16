@@ -55,6 +55,7 @@ from sqlalchemy import (
     inspect,
     or_,
     update,
+    case
 )
 from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import selectinload, sessionmaker
@@ -158,10 +159,41 @@ class TraderAdmin(ModelView, model=TraderOrm):
                 model = getattr(model, part).mapper.class_
                 stmt = stmt.join(model)
 
-            if is_desc:
-                stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), desc(getattr(model, parts[-1])))
+            print(parts[-1])
+            if parts[-1] == "profit":
+                if is_desc:
+                    #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), desc(getattr(model, parts[-1])))
+                    stmt = stmt.order_by(
+                        case(
+                            (getattr(model, parts[-1]) == 0, 1),  # если value == None, то присваиваем 1 (в конце сортировки)
+                            else_=0  # иначе присваиваем 0
+                        ),
+                        getattr(model, parts[-1]).desc())
+                else:
+                    stmt = stmt.order_by(
+                        case(
+                            (getattr(model, parts[-1]) == 0, 1),  # если value == None, то присваиваем 1 (в конце сортировки)
+                            else_=0  # иначе присваиваем 0
+                        ),
+                        getattr(model, parts[-1]).asc())
+                    #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), asc(getattr(model, parts[-1])))
             else:
-                stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), asc(getattr(model, parts[-1])))
+                if is_desc:
+                    #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), desc(getattr(model, parts[-1])))
+                    stmt = stmt.order_by(
+                        case(
+                            (getattr(model, parts[-1]) == None, 1),  # если value == None, то присваиваем 1 (в конце сортировки)
+                            else_=0  # иначе присваиваем 0
+                        ),
+                        getattr(model, parts[-1]).desc())
+                else:
+                    stmt = stmt.order_by(
+                        case(
+                            (getattr(model, parts[-1]) == None, 1),  # если value == None, то присваиваем 1 (в конце сортировки)
+                            else_=0  # иначе присваиваем 0
+                        ),
+                        getattr(model, parts[-1]).asc())
+                    #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), asc(getattr(model, parts[-1])))
 
         return stmt
 

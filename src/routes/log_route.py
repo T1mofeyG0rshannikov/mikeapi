@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated
 
 import pytz
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Response
 
 from src.db.models.models import UrlEnum
 from src.dependencies import (
@@ -17,7 +17,7 @@ from src.dependencies import (
 from src.entites.trade import TRADE_OPERATIONS
 from src.entites.trader import TraderWatch
 from src.entites.vendor import Vendor
-from src.exceptions import APIServerError
+from src.exceptions import APIServerError, InvalidCreateLogRequest
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.log_repository import LogRepository
 from src.repositories.ping_repository import PingRepository
@@ -56,7 +56,7 @@ async def create_log(
         elif server_status == UrlEnum.unavailable:
             await asyncio.sleep(60)
             return Response(status=503)
-
+        
         try:
             username, operation, ticker_name, _, price, currency, _ = data.text.split()
             ticker = await log_repository.get_ticker(slug=ticker_name)
@@ -69,10 +69,9 @@ async def create_log(
             operation = TRADE_OPERATIONS.get(operation)
 
             if not operation:
-                return APIResponse(status="fail")
+                raise InvalidCreateLogRequest("Неверный формат запроса")
         except Exception as e:
-            print(e)
-            return APIResponse(status="fail")
+            raise InvalidCreateLogRequest("Неверный формат запроса")
 
         user = await trader_repository.get(username)
 
@@ -106,12 +105,8 @@ async def create_log(
             operation=operation,
             ticker=ticker,
         )
-
         return APIResponse(
             status="ok",
         )
     except:
-        formatted_string = "\n".join(f"{key} - {value}" for key, value in sorted(data.dict().items()))
-        await log_repository.create_unsuccesslog(body=formatted_string)
-
         raise APIServerError("Что-то пошло не так")

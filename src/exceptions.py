@@ -19,10 +19,8 @@ class VendorNotFoundError(Error):
 class NotPermittedError(Error):
     pass
 
-
 class InvalidCreateLogRequest(Error):
     pass
-
 
 class UrlNotFound(Error):
     pass

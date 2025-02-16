@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, validator
 
+from src.exceptions import InvalidCreateLogRequest
+
 
 class CreateLogRequest(BaseModel):
     app_id: str
@@ -17,4 +19,5 @@ class CreateLogRequest(BaseModel):
             datetime.strptime(value, "%d:%m:%Y.%H:%M:%S")
             return value
         except ValueError:
-            raise ValueError("Invalid time format. Use DD:MM:YYYY.hh:mm:ss")
+            raise InvalidCreateLogRequest("Invalid time format. Use DD:MM:YYYY.hh:mm:ss")
+            #raise ValueError("Invalid time format. Use DD:MM:YYYY.hh:mm:ss")

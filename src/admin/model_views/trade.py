@@ -80,8 +80,10 @@ class LogAdmin(ModelView, model=LogOrm):
         if delayed == "false":
             delayed = False
             
+        stmt = self.list_query(request)
+        
         if delayed:
-            stmt = self.list_query(request).filter(LogOrm.delayed == delayed)
+            stmt = stmt.filter(LogOrm.delayed == delayed)
 
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))

@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -27,3 +28,11 @@ app.add_middleware(SessionMiddleware, secret_key=get_admin_config().admin_secret
 app.include_router(router=log_router)
 app.include_router(router=traders_router)
 init_exc_handlers(app)
+from pydantic import BaseModel, ValidationError
+
+@app.exception_handler(ValidationError)
+async def validation_exception_handler(request: Request, exc: ValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"body": exc.body},
+    )

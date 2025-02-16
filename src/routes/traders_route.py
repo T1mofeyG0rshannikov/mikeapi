@@ -101,12 +101,9 @@ async def add_traders(
 @admin_required
 async def add_usernames(
     user: Annotated[UserOrm, Depends(get_user)],
-    create_usernames: Annotated[AddUsernames, Depends(get_create_usernames)],
     txt_data=Depends(get_txt_file),
 ):
-    print(type(txt_data))
     create_usernames_task.delay(txt_data)
-    # background_tasks.add_task(create_usernames, txt_data)
 
 
 @router.post("/subscribes/")
