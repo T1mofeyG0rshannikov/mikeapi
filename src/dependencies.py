@@ -49,10 +49,6 @@ def get_create_traders(traders_repository: TraderRepository = Depends(get_trader
     return CreateTraders(traders_repository)
 
 
-def get_create_usernames(traders_repository: TraderRepository = Depends(get_trader_repository)) -> AddUsernames:
-    return AddUsernames(traders_repository)
-
-
 def get_ping_repository(db: Annotated[AsyncSession, Depends(get_db)]) -> PingRepository:
     return PingRepository(db)
 

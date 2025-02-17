@@ -159,7 +159,6 @@ class TraderAdmin(ModelView, model=TraderOrm):
                 model = getattr(model, part).mapper.class_
                 stmt = stmt.join(model)
 
-            print(parts[-1])
             if parts[-1] == "profit":
                 if is_desc:
                     #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), desc(getattr(model, parts[-1])))
@@ -206,6 +205,18 @@ class TraderAdmin(ModelView, model=TraderOrm):
             ids = [user.id for user in stmt]
             for i in range(0, len(ids), 5000):
                 await session.execute(delete(TraderOrm).where(TraderOrm.id.in_(ids[i : i + 5000])))
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
+        
+    @action(name="clear_count", label="Обнулить счетчики популярности")
+    async def clear_count_action(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            stmt = await self.raw_list(request)
+            stmt = await session.execute(stmt)
+            stmt = stmt.scalars().all()
+            ids = [user.id for user in stmt]
+            for i in range(0, len(ids), 5000):
+                await session.execute(update(TraderOrm).where(TraderOrm.id.in_(ids[i : i + 5000])).values(count=0))
             await session.commit()
             return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
 
@@ -373,7 +384,6 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
-
         pagination = Pagination(
             rows=rows,
             page=page,

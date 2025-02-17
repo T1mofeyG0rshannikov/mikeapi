@@ -5,6 +5,7 @@ from time import time
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from src.repositories.vendor_repository import VendorRepository
 from src.create_traders import TraderStatus
 from src.db.database import SessionLocal
 from src.db.models.models import TraderOrm, VendorOrm
@@ -41,8 +42,9 @@ def valid_username(username: str) -> bool:
 
 
 class AddUsernames:
-    def __init__(self, repository: TraderRepository) -> None:
+    def __init__(self, repository: TraderRepository, vendor_repository: VendorRepository) -> None:
         self.traders_repository = repository
+        self.vendor_repository = vendor_repository
 
     def count(self, users, user) -> int:
         return bisect_right(users, user) - bisect_left(users, user)
@@ -60,6 +62,9 @@ class AddUsernames:
 
         unique_users = sorted(set(users), key=lambda t: t.username)
         unique_user_names = [user.username for user in unique_users]
+        
+        if action == LoadTraderAction.subscribes:
+            app = await self.vendor_repository.first()
 
         traders = []
         for i in range(0, len(unique_user_names), 5000):

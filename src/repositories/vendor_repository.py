@@ -17,3 +17,8 @@ class VendorRepository(BaseRepository):
         query = select(APIURLSOrm)
         result = await self.db.execute(query)
         return result.scalars().first()
+    
+    async def first(self) -> VendorOrm:
+        query = select(VendorOrm)
+        result = await self.db.execute(query)
+        return result.scalars().first()

@@ -5,26 +5,23 @@ from io import StringIO
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from src.auth.jwt_processor import JwtProcessor
 from src.celery import create_usernames_task
 from src.create_traders import CreateTraders
-from src.create_usernames import AddUsernames, CreateUsernameDTO
 from src.db.models.models import TradersBuffer, UserOrm
 from src.dependencies import (
     get_create_traders,
-    get_create_usernames,
     get_db,
     get_jwt_processor,
     get_user_repository,
     get_vendor_repository,
 )
-from src.entites.trader import LoadTraderAction, TraderWatch
+from src.entites.trader import TraderWatch
 from src.exceptions import NotPermittedError
-from src.repositories.trader_repository import TraderRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.vendor_repository import VendorRepository
 
@@ -110,12 +107,10 @@ async def add_usernames(
 @admin_required
 async def add_subscribes(
     user: Annotated[UserOrm, Depends(get_user)],
-    create_usernames: Annotated[AddUsernames, Depends(get_create_usernames)],
-    vendor_repository: Annotated[VendorRepository, Depends(get_vendor_repository)],
     txt_data=Depends(get_txt_file),
 ):
-    vendor = await vendor_repository.get(id="myapp")
-    return await create_usernames(users=txt_data, watch=TraderWatch.on, action=LoadTraderAction.subscribes, app=vendor)
+    create_usernames_task.delay(txt_data, watch=TraderWatch.on)
+    #return await create_usernames(users=txt_data, watch=TraderWatch.on, action=LoadTraderAction.subscribes, app=vendor)
 
 
 @router.delete("/clear-buffer/")

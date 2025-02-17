@@ -2,6 +2,8 @@ import asyncio
 import os
 
 from celery import Celery
+from src.repositories.vendor_repository import VendorRepository
+from src.entites.trader import LoadTraderAction, TraderWatch
 from src.create_usernames import AddUsernames, CreateUsernameDTO
 from src.db.database import SessionLocal
 from src.repositories.trader_repository import TraderRepository
@@ -12,9 +14,9 @@ celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://lo
 
 
 @celery.task
-def create_usernames_task(strings):
-    db = SessionLocal()
-    usecase = AddUsernames(TraderRepository(db))
+def create_usernames_task(strings, watch=TraderWatch.pre):
+    db = SessionLocal()    
+    usecase = AddUsernames(TraderRepository(db), VendorRepository(db))
 
     users = []
 
@@ -23,4 +25,4 @@ def create_usernames_task(strings):
 
     users = sorted(users, key=lambda u: u.username)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(usecase(users))
+    loop.run_until_complete(usecase(users, watch=watch, action=LoadTraderAction.subscribes))

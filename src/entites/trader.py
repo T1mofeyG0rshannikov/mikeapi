@@ -14,7 +14,7 @@ class TraderStatus(StrEnum):
     active = "Активный"
     unactive = "Не активен"
     hidden = "Скрытый"
-    blocked = "Заблокированный"
+    blocked = "Заблокирован"
 
 
 class TradefBadge(StrEnum):

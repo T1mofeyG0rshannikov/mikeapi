@@ -237,7 +237,7 @@
             </a>
             {% endif %}
             {% else %}
-            {% if custom_action == "add-to-buffer" %}
+            {% if custom_action == "add-to-buffer" or custom_action == "clear-count" %}
             <a class="dropdown-item" id="action-custom-{{ custom_action }}" href="/admin/trader-orm/action/{{ custom_action }}/?{{ request.url.query }}">
               {{ label }}
             </a>

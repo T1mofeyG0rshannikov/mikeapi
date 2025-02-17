@@ -27,5 +27,5 @@ class TraderRepository(BaseRepository):
 
     async def update(self, trader: TraderOrm) -> TraderOrm:
         await self.db.commit()
-        self.db.refresh(trader)
+        await self.db.refresh(trader)
         return trader
