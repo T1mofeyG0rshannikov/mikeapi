@@ -1,80 +1,37 @@
-import json
-import time
-import warnings
-from collections.abc import AsyncGenerator, Callable, Sequence
 from datetime import datetime
-from enum import Enum
 from typing import (
-    TYPE_CHECKING,
     Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-    no_type_check,
 )
-from urllib.parse import urlencode
 
-import anyio
 import pytz
 from fastapi.requests import Request
 from markupsafe import Markup
 from sqladmin import ModelView, action
-from sqladmin._queries import Query
-from sqladmin._types import MODEL_ATTR
-from sqladmin.ajax import create_ajax_loader
-from sqladmin.exceptions import InvalidModelError
-from sqladmin.formatters import BASE_FORMATTERS
-from sqladmin.forms import ModelConverter, ModelConverterBase, get_model_form
 from sqladmin.helpers import (
-    Writer,
-    get_object_identifier,
-    get_primary_keys,
-    object_identifier_values,
-    prettify_class_name,
-    secure_filename,
     slugify_class_name,
-    stream_to_csv,
 )
 
 # stream_to_csv,
 from sqladmin.pagination import Pagination
-from sqladmin.templating import Jinja2Templates
 from sqlalchemy import (
-    Column,
-    String,
     and_,
-    asc,
-    cast,
     delete,
-    desc,
     func,
-    inspect,
-    or_,
     update,
     case
 )
-from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import selectinload, sessionmaker
-from sqlalchemy.orm.exc import DetachedInstanceError
-from sqlalchemy.sql.elements import ClauseElement
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import Select, select
-from starlette.datastructures import URL
-from starlette.exceptions import HTTPException
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, StreamingResponse
-from wtforms import Field, Form
-from wtforms.fields.core import UnboundField
+from starlette.responses import RedirectResponse
 
+from src.entites.trader import TraderWatch
 from src.db.models.models import TraderOrm, TradersBuffer
 
 TRADER_BADGE_ICONS = {
     "Верифицирован": "verified",
     "Автор стратегии": "strategy",
-    "Выбор Т-Инвестиций": "choice",
+    "Выбор Т-Инвестиции": "choice",
     "Популярный": "popular",
     "Помощник пульса": "assistant",
 }
@@ -129,9 +86,12 @@ class TraderAdmin(ModelView, model=TraderOrm):
             buffer = buffer.scalars().first()
             if buffer:
                 if buffer.usernames:
-                    stmt = select(TraderOrm).where(TraderOrm.username.in_(buffer.usernames))
+                    rows = []
+                    for i in range(0, len(buffer.usernames), 5000):
+                        traders = await session.execute(select(TraderOrm).where(TraderOrm.username.in_(buffer.usernames[i:i+5000])))
+                        traders = traders.scalars().all()
+                        rows.extend(traders)
 
-                    rows = await self._run_query(stmt)
                     return rows
             return []
 
@@ -161,62 +121,50 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
             if parts[-1] == "profit":
                 if is_desc:
-                    #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), desc(getattr(model, parts[-1])))
                     stmt = stmt.order_by(
                         case(
-                            (getattr(model, parts[-1]) == 0, 1),  # если value == None, то присваиваем 1 (в конце сортировки)
-                            else_=0  # иначе присваиваем 0
+                            (getattr(model, parts[-1]) == 0, 1),
+                            else_=0
                         ),
                         getattr(model, parts[-1]).desc())
                 else:
                     stmt = stmt.order_by(
                         case(
-                            (getattr(model, parts[-1]) == 0, 1),  # если value == None, то присваиваем 1 (в конце сортировки)
-                            else_=0  # иначе присваиваем 0
+                            (getattr(model, parts[-1]) == 0, 1),
+                            else_=0
                         ),
                         getattr(model, parts[-1]).asc())
-                    #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), asc(getattr(model, parts[-1])))
             else:
                 if is_desc:
-                    #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), desc(getattr(model, parts[-1])))
                     stmt = stmt.order_by(
                         case(
-                            (getattr(model, parts[-1]) == None, 1),  # если value == None, то присваиваем 1 (в конце сортировки)
-                            else_=0  # иначе присваиваем 0
+                            (getattr(model, parts[-1]) == None, 1),
+                            else_=0
                         ),
                         getattr(model, parts[-1]).desc())
                 else:
                     stmt = stmt.order_by(
                         case(
-                            (getattr(model, parts[-1]) == None, 1),  # если value == None, то присваиваем 1 (в конце сортировки)
-                            else_=0  # иначе присваиваем 0
+                            (getattr(model, parts[-1]) == None, 1),
+                            else_=0
                         ),
                         getattr(model, parts[-1]).asc())
-                    #stmt = stmt.order_by(getattr(model, parts[-1]).isnot(None).desc(), asc(getattr(model, parts[-1])))
 
         return stmt
 
-    @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
+    @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
     async def delete_all_action(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
-            stmt = await self.raw_list(request)
-            stmt = await session.execute(stmt)
-            stmt = stmt.scalars().all()
-            ids = [user.id for user in stmt]
-            for i in range(0, len(ids), 5000):
-                await session.execute(delete(TraderOrm).where(TraderOrm.id.in_(ids[i : i + 5000])))
+            query = delete(TraderOrm).where(self.filters_from_request(request))
+            await session.execute(query)
             await session.commit()
             return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
         
     @action(name="clear_count", label="Обнулить счетчики популярности")
     async def clear_count_action(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
-            stmt = await self.raw_list(request)
-            stmt = await session.execute(stmt)
-            stmt = stmt.scalars().all()
-            ids = [user.id for user in stmt]
-            for i in range(0, len(ids), 5000):
-                await session.execute(update(TraderOrm).where(TraderOrm.id.in_(ids[i : i + 5000])).values(count=0))
+            query = update(TraderOrm).where(self.filters_from_request(request)).values(count=0)
+            await session.execute(query)
             await session.commit()
             return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
 
@@ -224,8 +172,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
     async def add_to_buffer(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
             request.url.remove_query_params("pks")
-            stmt = await self.raw_list(request)
-            rows = await self._run_query(stmt)
+            rows = await self._run_query(self.list_query(request).filter(self.filters_from_request(request)))
 
             buffer = await session.execute(select(TradersBuffer))
             buffer = buffer.scalars().first()
@@ -237,7 +184,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
             if buffer.usernames is None:
                 buffer.usernames = []
 
-            buffer_usernames = list(set(buffer.usernames) | {trader.username for trader in rows})
+            buffer_usernames = list(set(buffer.usernames) | set(trader.username for trader in rows))
             buffer.usernames = buffer_usernames
 
             request.session["buffer_size"] = len(buffer_usernames)
@@ -247,7 +194,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
                 url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303
             )
 
-    @action(name="scanned", label="Пометить Scanned")
+    @action(name="scanned", label="Scanned (выбранные)")
     async def scanned(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
             pks = [int(i) for i in request.query_params.get("pks", "").split(",")]
@@ -256,12 +203,46 @@ class TraderAdmin(ModelView, model=TraderOrm):
             return RedirectResponse(
                 url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303
             )
+            
+    @action(name="status_on", label="Статус ON (выбранные)")
+    async def status_on(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            pks = [int(i) for i in request.query_params.get("pks", "").split(",")]
+            await session.execute(update(self.model).where(TraderOrm.id.in_(pks)).values(watch=TraderWatch.on))
+            await session.commit()
+            return RedirectResponse(
+                url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303
+            )
+            
+    @action(name="status_pre", label="Статус PRE (фильтр)")
+    async def status_pre(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            query = update(TraderOrm).where(self.filters_from_request(request)).values(watch=TraderWatch.pre)
+            await session.execute(query)
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303)
+            
+    @action(name="status_off", label="Статус OFF (фильтр)")
+    async def status_off(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            query = update(TraderOrm).where(self.filters_from_request(request)).values(watch=TraderWatch.off)
+            await session.execute(query)
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303)
+        
+    @action(name="status_raw", label="Статус RAW (фильтр)")
+    async def status_raw(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            query = update(TraderOrm).where(self.filters_from_request(request)).values(watch=TraderWatch.raw)
+            await session.execute(query)
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303)
 
     column_formatters = {
         TraderOrm.username: lambda trader, _: Markup(
             f"""<a href="https://www.tbank.ru/invest/social/profile/{trader.username}/" target="_blank">{trader.username}</a>"""
         ),
-        TraderOrm.profit: lambda trader, _: f"{trader.profit} %" if trader.profit else "",
+        TraderOrm.profit: lambda trader, _: f"{trader.profit} %" if trader.profit else "0",
         TraderOrm.watch: lambda trader, _: Markup(
             f"""<img width="20" style="min-width: 20px;" height="20" src="/static/icons/ico_{trader.watch}.png" />"""
         ),
@@ -282,9 +263,8 @@ class TraderAdmin(ModelView, model=TraderOrm):
     }
 
     column_sortable_list = ["portfolio", "trades", "profit", "subscribers", "subscribes", "count", "last_update"]
-
-    async def raw_list(self, request: Request, stmt=None):
-        search = request.query_params.get("search", None)
+    
+    def filters_from_request(self, request: Request, stmt=None):
         status = request.query_params.get("status")
         portfolio = request.query_params.get("portfolio")
         deals_l = request.query_params.get("deals_l")
@@ -296,86 +276,71 @@ class TraderAdmin(ModelView, model=TraderOrm):
         count_l = request.query_params.get("count_l")
         count_r = request.query_params.get("count_r")
 
-        subscribes_l = request.query_params.get("subscribes_l")
-        subscribes_r = request.query_params.get("subscribes_r")
+        subscribes_l = request.query_params.get("subscribers_l")
+        subscribes_r = request.query_params.get("subscribers_r")
 
-        subscribers_l = request.query_params.get("subscribers_l")
-        subscribers_r = request.query_params.get("subscribers_r")
+        subscribers_l = request.query_params.get("subscribes_l")
+        subscribers_r = request.query_params.get("subscribes_r")
 
         badge = request.query_params.get("badge")
 
         usernames = [username.lower().strip() for username in request.query_params.get("search", "").split(",")]
         usernames = list(filter(lambda x: x, usernames))
-        if stmt is None:
-            stmt = self.list_query(request)
 
+        filters = and_()
+        
         if usernames:
-            stmt = stmt.filter(func.lower(TraderOrm.username).in_(usernames))
+            filters &= and_(func.lower(TraderOrm.username).in_(usernames))
 
         if badge:
-            stmt = stmt.filter(TraderOrm.badges.contains([badge]))
+            filters &= and_(TraderOrm.badges.contains([badge]))
 
-        subscribes_filters = and_()
         if subscribes_l:
-            subscribes_filters &= and_(
-                int(subscribes_l) <= TraderOrm.subscribes, TraderOrm.subscribes <= int(subscribes_r)
-            )
+            filters &= and_(int(subscribes_l) <= TraderOrm.subscribes)
         if subscribes_r:
-            subscribes_filters &= and_(TraderOrm.subscribes <= int(subscribes_r))
+            filters &= and_(TraderOrm.subscribes <= int(subscribes_r))
 
-        stmt = stmt.filter(subscribes_filters)
-
-        subscribers_filters = and_()
         if subscribers_l:
-            subscribers_filters &= and_(int(subscribers_l) <= TraderOrm.subscribers)
+            filters &= and_(int(subscribers_l) <= TraderOrm.subscribers)
         if subscribers_r:
-            subscribers_filters &= and_(TraderOrm.subscribers <= int(subscribers_r))
-
-        stmt = stmt.filter(subscribers_filters)
+            filters &= and_(TraderOrm.subscribers <= int(subscribers_r))
 
         if watch:
-            stmt = stmt.filter(TraderOrm.watch == watch)
+            filters &= and_(TraderOrm.watch == watch)
 
-        profit_filters = and_()
         if profit_l:
-            profit_filters &= and_(float(profit_l) <= TraderOrm.profit)
+            filters &= and_(float(profit_l) <= TraderOrm.profit)
         if profit_r:
-            profit_filters &= and_(TraderOrm.profit <= float(profit_r))
+            filters &= and_(TraderOrm.profit <= float(profit_r))
 
-        stmt = stmt.filter(profit_filters)
-
-        deals_filters = and_()
         if deals_l:
-            deals_filters &= and_(int(deals_l) <= TraderOrm.trades)
+            filters &= and_(int(deals_l) <= TraderOrm.trades)
         if deals_r:
-            deals_filters &= and_(TraderOrm.trades <= int(deals_r))
-
-        stmt = stmt.filter(deals_filters)
+            filters &= and_(TraderOrm.trades <= int(deals_r))
 
         if status:
-            stmt = stmt.filter(TraderOrm.status == status)
+            filters &= and_(TraderOrm.status == status)
 
         if portfolio:
-            stmt = stmt.filter(TraderOrm.portfolio == portfolio)
+            filters &= and_(TraderOrm.portfolio == portfolio)
 
-        count_filters = and_()
         if count_l:
-            count_filters &= and_(int(count_l) <= TraderOrm.count)
+            filters &= and_(int(count_l) <= TraderOrm.count)
         if count_r:
-            count_filters &= and_(TraderOrm.count <= int(count_r))
+            filters &= and_(TraderOrm.count <= int(count_r))
 
-        stmt = stmt.filter(count_filters)
+        return filters
+    
+    def raw_list(self, request: Request, stmt=None):
+        stmt = self.list_query(request).filter(self.filters_from_request(request))
 
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
 
-        if search:
-            stmt = self.search_query(stmt=stmt, term=search)
-
         return stmt
 
     async def list(self, request: Request) -> Pagination:
-        stmt = await self.raw_list(request)
+        stmt = self.raw_list(request)
         stmt = self.sort_query(stmt, request)
         page_size = self.validate_page_number(request.query_params.get("pageSize"), self.page_size)
         page = self.validate_page_number(request.query_params.get("page"), 1)
@@ -383,6 +348,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
         count = await self.count(request, select(func.count()).select_from(stmt))
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
+
         rows = await self._run_query(stmt)
         pagination = Pagination(
             rows=rows,

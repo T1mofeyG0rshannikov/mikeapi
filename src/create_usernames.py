@@ -55,16 +55,15 @@ class AddUsernames:
         watch: str = TraderWatch.pre,
         app: VendorOrm | None = None,
         action: str | None = None,
-        db=SessionLocal(),
     ) -> None:
+        db=SessionLocal()
         start = time()
         exist_codes = await self.traders_repository.get_codes()
 
         unique_users = sorted(set(users), key=lambda t: t.username)
         unique_user_names = [user.username for user in unique_users]
         
-        if action == LoadTraderAction.subscribes:
-            app = await self.vendor_repository.first()
+        app = await self.vendor_repository.first()
 
         traders = []
         for i in range(0, len(unique_user_names), 5000):
@@ -80,17 +79,18 @@ class AddUsernames:
             else:
                 trader.count = ucount
 
-            trader.app = app
-
             if action == LoadTraderAction.subscribes:
+                trader.app_id = app.id
                 if trader.watch != TraderWatch.on:
                     trader.last_update = datetime.utcnow()
 
                 trader.watch = TraderWatch.on
 
-        exist_trader_names = [t.username for t in traders]
+        #exist_trader_names = [t.username for t in traders]
+        exist_trader_names = await db.execute(select(TraderOrm.username))
+        exist_trader_names = exist_trader_names.scalars().all()
 
-        user_names = set([user for user in users if user.username not in exist_trader_names])
+        user_names = [user for user in unique_users if user.username not in exist_trader_names]
 
         users_to_create = []
         for user in user_names:
@@ -104,7 +104,7 @@ class AddUsernames:
                 code = generate_code()
                 ind = get_code_index(exist_codes, code)
 
-            create_data = {"username": user.username, "code": code, "watch": watch, "app": app}
+            create_data = {"username": user.username, "code": code, "watch": watch, "app_id": app.id}
             exist_codes.insert(ind, code)
 
             if "%" in user.data:
@@ -131,6 +131,11 @@ class AddUsernames:
                 create_data["status"] = TraderStatus.active
 
             users_to_create.append(TraderOrm(**create_data, count=users.count(user)))
+        
+        print(len(set(user_names)))
+        print(len(set([user.username for user in user_names])))
+        print(len(traders))
         db.add_all(users_to_create)
         await db.commit()
+        db.close()
         print(time() - start)

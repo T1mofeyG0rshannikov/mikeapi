@@ -10,20 +10,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from src.auth.jwt_processor import JwtProcessor
-from src.celery import create_usernames_task
-from src.create_traders import CreateTraders
+from src.celery import create_traders_task, create_usernames_task
 from src.db.models.models import TradersBuffer, UserOrm
 from src.dependencies import (
-    get_create_traders,
     get_db,
     get_jwt_processor,
     get_user_repository,
-    get_vendor_repository,
 )
-from src.entites.trader import TraderWatch
+from src.entites.trader import LoadTraderAction, TraderWatch
 from src.exceptions import NotPermittedError
 from src.repositories.user_repository import UserRepository
-from src.repositories.vendor_repository import VendorRepository
 
 router = APIRouter(prefix="", tags=["traders"])
 
@@ -65,8 +61,12 @@ async def get_csv_file(
 
     csv_file = StringIO(decoded_contents)
     csv_data = csv.reader(csv_file)
+    
+    csvinput = []
+    for row in csv_data:
+        csvinput.append(row)
 
-    return csv_data
+    return csvinput
 
 
 async def get_txt_file(
@@ -88,10 +88,10 @@ async def get_txt_file(
 @admin_required
 async def add_traders(
     user: Annotated[UserOrm, Depends(get_user)],
-    create_traders: Annotated[CreateTraders, Depends(get_create_traders)],
     csv_data=Depends(get_csv_file),
 ):
-    return await create_traders(csv_data)
+    create_traders_task.delay(csv_data)
+    #return await create_traders(csv_data)
 
 
 @router.post("/usernames/")
@@ -109,7 +109,7 @@ async def add_subscribes(
     user: Annotated[UserOrm, Depends(get_user)],
     txt_data=Depends(get_txt_file),
 ):
-    create_usernames_task.delay(txt_data, watch=TraderWatch.on)
+    create_usernames_task.delay(txt_data, watch=TraderWatch.on, action=LoadTraderAction.subscribes)
     #return await create_usernames(users=txt_data, watch=TraderWatch.on, action=LoadTraderAction.subscribes, app=vendor)
 
 

@@ -120,21 +120,6 @@ class LogOrm(Model):
     ticker_id = Column(Integer, ForeignKey("tickers.id"))
     ticker = relationship("TickerOrm", back_populates="logs")
 
-    """@hybrid_property
-    def delayed(self, db=Session()):
-        query = select(SettingsOrm)
-        settings = db.execute(query).scalars().first()
-        if settings:
-            moscow_tz = pytz.timezone('Europe/Moscow') # Укажите свой часовой пояс
-            delay = settings.log_delay
-            created_at_datetime = datetime.fromtimestamp(self.created_at, tz=moscow_tz).astimezone(pytz.utc)
-            time_datetime = datetime.fromtimestamp(self.time, tz=moscow_tz).astimezone(pytz.utc)
-            dif = created_at_datetime - time_datetime
-            if dif.total_seconds() >= delay:
-                return True
-
-        return False"""
-
     @hybrid_property
     def delayed(self, db=Session()):
         query = select(SettingsOrm)
@@ -277,3 +262,5 @@ class UnsuccessLog(Model):
 
     id = Column(Integer, index=True, primary_key=True)
     body = Column(String)
+    
+    created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))

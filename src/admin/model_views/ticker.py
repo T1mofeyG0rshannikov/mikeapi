@@ -87,7 +87,7 @@ class TickerAdmin(ModelView, model=TickerOrm):
         "end": "Конец",
     }
     
-    @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
+    @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
     async def delete_all_action(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
             stmt = await self.raw_list(request)

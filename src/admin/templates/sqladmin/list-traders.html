@@ -237,7 +237,7 @@
             </a>
             {% endif %}
             {% else %}
-            {% if custom_action == "add-to-buffer" or custom_action == "clear-count" %}
+            {% if custom_action == "add-to-buffer" or custom_action == "clear-count" or custom_action == "status-off" or custom_action == "status-raw" or custom_action == "status-pre" %}
             <a class="dropdown-item" id="action-custom-{{ custom_action }}" href="/admin/trader-orm/action/{{ custom_action }}/?{{ request.url.query }}">
               {{ label }}
             </a>
@@ -332,7 +332,7 @@
       <div class="searchable-container">
         Портфель
         <div>
-          <select style="width: 70px;" id="watch">
+          <select style="width: 70px;" id="portfolio">
             <option {% if request.query_params.get('portfolio', '') == "" %}selected{% endif %} value="">Все</option>
             <option {% if request.query_params.get('portfolio') == '<10K' %}selected{% endif %} value="<10K">&lt;10K</option>
             <option {% if request.query_params.get('portfolio') == '10-50K' %}selected{% endif %} value="10-50K">10-50K</option>
@@ -393,7 +393,7 @@
             <option {% if request.query_params.get('badge', '') == "" %}selected{% endif %} value="">Все</option>
             <option {% if request.query_params.get('badge') == "Верифицирован" %}selected{% endif %} value="Верифицирован">Вериф.</option>
             <option {% if request.query_params.get('badge') == "Автор стратегии" %}selected{% endif %} value="Автор стратегии">Автор</option>
-            <option {% if request.query_params.get('badge') == "Выбор Т-Инвестиций" %}selected{% endif %} value="Выбор Т-Инвестиций">Выбор</option>
+            <option {% if request.query_params.get('badge') == "Выбор Т-Инвестиции" %}selected{% endif %} value="Выбор Т-Инвестиции">Выбор</option>
             <option {% if request.query_params.get('badge') == "Популярный" %}selected{% endif %} value="Популярный">Попул.</option>
             <option {% if request.query_params.get('badge') == "Помощник пульса" %}selected{% endif %} value="Помощник пульса">Помощ.</option>
           </select>
@@ -456,6 +456,7 @@
             const count_l = document.getElementById("count_l").value;
             const count_r = document.getElementById("count_r").value;
             const status = document.getElementById("status").value;
+            const portfolio = document.getElementById("portfolio").value;
 
             addParams([
               ['watch', watch],
@@ -464,6 +465,7 @@
               ['profit_l', profit_l],
               ['profit_r', profit_r],
               ['status', status],
+              ['portfolio', portfolio],
 
               ['subscribes_l', subscribes_l],
               ['subscribes_r', subscribes_r],
