@@ -21,6 +21,7 @@ from src.entites.trader import LoadTraderAction, TraderWatch
 from src.exceptions import NotPermittedError
 from src.repositories.user_repository import UserRepository
 
+
 router = APIRouter(prefix="", tags=["traders"])
 
 
@@ -91,7 +92,6 @@ async def add_traders(
     csv_data=Depends(get_csv_file),
 ):
     create_traders_task.delay(csv_data)
-    #return await create_traders(csv_data)
 
 
 @router.post("/usernames/")

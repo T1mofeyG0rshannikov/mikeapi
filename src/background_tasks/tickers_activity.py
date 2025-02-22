@@ -7,7 +7,9 @@ from src.db.database import Session
 from src.db.models.models import LogOrm, TickerOrm, TraderOrm
 
 
-def get_tickers_activity(db=Session()) -> None:
+def get_tickers_activity() -> None:
+    db=Session()
+    
     tickers = db.execute(select(TickerOrm)).scalars().all()
     for ticker in tickers:
         ticker_id = ticker.id

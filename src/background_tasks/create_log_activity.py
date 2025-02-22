@@ -7,7 +7,8 @@ from src.db.database import Session
 from src.db.models.models import LogActivityOrm, LogOrm
 
 
-def create_log_activity(db=Session()):
+def create_log_activity() -> None:
+    db=Session()
     now = datetime.now(pytz.timezone("Europe/Moscow"))
     one_hour_ago = now - timedelta(hours=1)
 

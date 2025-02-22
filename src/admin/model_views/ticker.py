@@ -1,15 +1,14 @@
 from fastapi import Request
-from fastapi.responses import RedirectResponse
 from markupsafe import Markup
-from sqladmin import ModelView, action
-from sqladmin.helpers import slugify_class_name
-from sqladmin.pagination import Pagination
-from sqlalchemy import delete, func, select
-from sqlalchemy.orm import selectinload
 
+
+from src.admin.model_views.base import BaseModelView
 from src.admin.forms import TickerForm
 from src.db.models.models import TickerOrm
 from src.entites.ticker import TICKER_TYPES
+from sqlalchemy import (
+    and_,
+)
 
 
 def get_ticker_type_slug(ticker_type: str) -> str:
@@ -20,7 +19,7 @@ def get_ticker_type_slug(ticker_type: str) -> str:
     return "bonds"
 
 
-class TickerAdmin(ModelView, model=TickerOrm):
+class TickerAdmin(BaseModelView, model=TickerOrm):
     column_list = [
         TickerOrm.slug,
         TickerOrm.name,
@@ -87,73 +86,25 @@ class TickerAdmin(ModelView, model=TickerOrm):
         "end": "Конец",
     }
     
-    @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
-    async def delete_all_action(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            stmt = await self.raw_list(request)
-            stmt = await session.execute(stmt)
-            stmt = stmt.scalars().all()
-            ids = [user.id for user in stmt]
-            for i in range(0, len(ids), 5000):
-                await session.execute(delete(self.model).where(self.model.id.in_(ids[i : i + 5000])))
-            await session.commit()
-            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
-
-    async def raw_list(self, request: Request) -> Pagination:
-        search = request.query_params.get("search", None)
+    def filters_from_request(self, request: Request):
         type = request.query_params.get("type")
         rare = request.query_params.get("rare", False)
-        if rare:
-            if rare == "true":
-                rare = True
-            else:
-                rare = False
-
         archive = request.query_params.get("archive", False)
 
+        if rare:
+            rare = rare == "true"
+
         if archive:
-            if archive == "true":
-                archive = True
-            else:
-                archive = False
+            archive = archive == "true"
 
-        stmt = self.list_query(request)
-        stmt = stmt.filter(TickerOrm.archive == archive)
-        stmt = stmt.filter(TickerOrm.rare == rare)
-
+        filters = and_()
+        filters &= and_(TickerOrm.archive == archive)
+        filters &= and_(TickerOrm.rare == rare)
+        
         if type:
-            stmt = stmt.filter(TickerOrm.type == type)
+            filters &= and_(TickerOrm.type == type)
 
-        for relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation))
-
-        if search:
-            stmt = self.search_query(stmt=stmt, term=search)
-
-        return stmt
-
-    async def list(self, request: Request) -> Pagination:
-        page = self.validate_page_number(request.query_params.get("page"), 1)
-        page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
-        page_size = min(page_size or self.page_size, max(self.page_size_options))
-
-        stmt = await self.raw_list(request)
-
-        stmt = self.sort_query(stmt, request)
-
-        count = await self.count(request, select(func.count()).select_from(stmt))
-
-        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
-        rows = await self._run_query(stmt)
-
-        pagination = Pagination(
-            rows=rows,
-            page=page,
-            page_size=page_size,
-            count=count,
-        )
-
-        return pagination
+        return filters
 
     form = TickerForm
 

@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from celery import Celery
-from src.create_traders import CreateTraders
+from src.create_traders.create_traders import CreateTraders
 from src.repositories.vendor_repository import VendorRepository
 from src.entites.trader import TraderWatch
 from src.create_usernames import AddUsernames, CreateUsernameDTO

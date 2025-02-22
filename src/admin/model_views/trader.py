@@ -6,25 +6,22 @@ from typing import (
 import pytz
 from fastapi.requests import Request
 from markupsafe import Markup
-from sqladmin import ModelView, action
+from sqladmin import action
 from sqladmin.helpers import (
     slugify_class_name,
 )
 
-# stream_to_csv,
-from sqladmin.pagination import Pagination
 from sqlalchemy import (
     and_,
-    delete,
     func,
     update,
     case
 )
-from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import Select, select
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
+from src.admin.model_views.base import BaseModelView
 from src.entites.trader import TraderWatch
 from src.db.models.models import TraderOrm, TradersBuffer
 
@@ -37,7 +34,7 @@ TRADER_BADGE_ICONS = {
 }
 
 
-class TraderAdmin(ModelView, model=TraderOrm):
+class TraderAdmin(BaseModelView, model=TraderOrm):
     column_list = [
         TraderOrm.watch,
         TraderOrm.badges,
@@ -152,14 +149,6 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
         return stmt
 
-    @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
-    async def delete_all_action(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            query = delete(TraderOrm).where(self.filters_from_request(request))
-            await session.execute(query)
-            await session.commit()
-            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
-        
     @action(name="clear_count", label="Обнулить счетчики популярности")
     async def clear_count_action(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
@@ -168,7 +157,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
             await session.commit()
             return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
 
-    @action(name="add_to_buffer", label="Добавить в буфер все")
+    @action(name="add_to_buffer", label="Добавить в буфер (фильтр)")
     async def add_to_buffer(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
             request.url.remove_query_params("pks")
@@ -209,6 +198,16 @@ class TraderAdmin(ModelView, model=TraderOrm):
         async with self.session_maker(expire_on_commit=False) as session:
             pks = [int(i) for i in request.query_params.get("pks", "").split(",")]
             await session.execute(update(self.model).where(TraderOrm.id.in_(pks)).values(watch=TraderWatch.on))
+            await session.commit()
+            return RedirectResponse(
+                url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303
+            )
+            
+    @action(name="status_off_pks", label="Статус OFF (выбранные)")
+    async def status_of_pks(self, request: Request):
+        async with self.session_maker(expire_on_commit=False) as session:
+            pks = [int(i) for i in request.query_params.get("pks", "").split(",")]
+            await session.execute(update(self.model).where(TraderOrm.id.in_(pks)).values(watch=TraderWatch.off))
             await session.commit()
             return RedirectResponse(
                 url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303
@@ -264,7 +263,7 @@ class TraderAdmin(ModelView, model=TraderOrm):
 
     column_sortable_list = ["portfolio", "trades", "profit", "subscribers", "subscribes", "count", "last_update"]
     
-    def filters_from_request(self, request: Request, stmt=None):
+    def filters_from_request(self, request: Request):
         status = request.query_params.get("status")
         portfolio = request.query_params.get("portfolio")
         deals_l = request.query_params.get("deals_l")
@@ -330,31 +329,3 @@ class TraderAdmin(ModelView, model=TraderOrm):
             filters &= and_(TraderOrm.count <= int(count_r))
 
         return filters
-    
-    def raw_list(self, request: Request, stmt=None):
-        stmt = self.list_query(request).filter(self.filters_from_request(request))
-
-        for relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation))
-
-        return stmt
-
-    async def list(self, request: Request) -> Pagination:
-        stmt = self.raw_list(request)
-        stmt = self.sort_query(stmt, request)
-        page_size = self.validate_page_number(request.query_params.get("pageSize"), self.page_size)
-        page = self.validate_page_number(request.query_params.get("page"), 1)
-
-        count = await self.count(request, select(func.count()).select_from(stmt))
-
-        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
-
-        rows = await self._run_query(stmt)
-        pagination = Pagination(
-            rows=rows,
-            page=page,
-            page_size=page_size,
-            count=count,
-        )
-
-        return pagination

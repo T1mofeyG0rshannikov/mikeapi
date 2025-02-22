@@ -6,10 +6,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from src.repositories.vendor_repository import VendorRepository
-from src.create_traders import TraderStatus
 from src.db.database import SessionLocal
 from src.db.models.models import TraderOrm, VendorOrm
-from src.entites.trader import LoadTraderAction, TraderWatch
+from src.entites.trader import LoadTraderAction, TraderStatus, TraderWatch
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
 
@@ -86,7 +85,6 @@ class AddUsernames:
 
                 trader.watch = TraderWatch.on
 
-        #exist_trader_names = [t.username for t in traders]
         exist_trader_names = await db.execute(select(TraderOrm.username))
         exist_trader_names = exist_trader_names.scalars().all()
 
@@ -95,8 +93,8 @@ class AddUsernames:
         users_to_create = []
         for user in user_names:
             if not valid_username(user.username):
-                print(user, "rrrrr")
                 continue
+
             print(user)
             code = generate_code()
             ind = get_code_index(exist_codes, code)

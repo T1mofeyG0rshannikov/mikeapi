@@ -1,24 +1,15 @@
 import pytz
 from fastapi.requests import Request
-from sqladmin import ModelView, action
-from sqladmin.helpers import (
-    slugify_class_name,
-)
 
-from sqladmin.pagination import Pagination
 from sqlalchemy import (
-    delete,
-    select,
+    and_
 )
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql.expression import select
 from starlette.requests import Request
-from starlette.responses import RedirectResponse
-from sqlalchemy import func
+from src.admin.model_views.base import BaseModelView
 from src.db.models.models import LogOrm
 
 
-class LogAdmin(ModelView, model=LogOrm):
+class LogAdmin(BaseModelView, model=LogOrm):
     column_list = [
         LogOrm.app,
         LogOrm.time,
@@ -56,62 +47,17 @@ class LogAdmin(ModelView, model=LogOrm):
         "main_server": "Сервер",
     }
 
-    @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
-    async def delete_all_action(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            stmt = await self.raw_list(request)
-            stmt = await session.execute(stmt)
-            stmt = stmt.scalars().all()
-            ids = [user.id for user in stmt]
-            for i in range(0, len(ids), 5000):
-                await session.execute(delete(self.model).where(self.model.id.in_(ids[i : i + 5000])))
-            await session.commit()
-            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
-
     page_size = 100
     can_export = False
 
-    async def raw_list(self, request: Request):
-        search = request.query_params.get("search", None)
+    def filters_from_request(self, request: Request):
         delayed = request.query_params.get("delayed", False)
 
-        if delayed == "true":
-            delayed = True
-        if delayed == "false":
-            delayed = False
-            
-        stmt = self.list_query(request)
-        
         if delayed:
-            stmt = stmt.filter(LogOrm.delayed == delayed)
+            delayed = delayed == "true"
+        
+        filters = and_()        
+        if delayed:
+            filters &= and_(LogOrm.delayed == delayed)
 
-        for relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation))
-
-        if search:
-            stmt = self.search_query(stmt=stmt, term=search)
-
-        return stmt
-
-    async def list(self, request: Request) -> Pagination:
-        page = self.validate_page_number(request.query_params.get("page"), 1)
-        page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
-        page_size = min(page_size or self.page_size, max(self.page_size_options))
-
-        stmt = await self.raw_list(request)
-
-        stmt = self.sort_query(stmt, request)
-
-        count = await self.count(request, select(func.count()).select_from(stmt))
-
-        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
-        rows = await self._run_query(stmt)
-
-        pagination = Pagination(
-            rows=rows,
-            page=page,
-            page_size=page_size,
-            count=count,
-        )
-
-        return pagination
+        return filters
