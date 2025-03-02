@@ -1,5 +1,5 @@
-from src.create_traders.data import TRADER_PORTFOLIO
-from src.create_traders.dto import TraderCreateDTO
+from src.usecases.create_traders.data import TRADER_PORTFOLIO
+from src.usecases.create_traders.dto import TraderCreateDTO
 from src.entites.trader import TraderStatus
 
 
@@ -28,5 +28,4 @@ def traders_data_from_csv(csvinput: list[str]) -> list[TraderCreateDTO]:
             )
         )
 
-    traders_data = sorted(set(traders_data), key=lambda t: t.username)
-    return traders_data
+    return sorted(set(traders_data), key=lambda t: t.username)

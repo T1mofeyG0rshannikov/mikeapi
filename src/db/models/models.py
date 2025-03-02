@@ -12,7 +12,6 @@ from sqlalchemy import (
     Integer,
     String,
     case,
-    event,
     func,
     select,
 )
@@ -21,6 +20,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TIMESTAMP
 
+from src.entites.schedler import WEEKDAYS_LIST, WeekDays
 from src.db.database import Model, Session
 from src.entites.ticker import TICKER_TYPES
 from src.entites.trader import TraderStatus, TraderWatch
@@ -264,3 +264,51 @@ class UnsuccessLog(Model):
     body = Column(String)
     
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))
+
+
+class SchedulerRuleOrm(Model):
+    __tablename__ = 'schedulerrule'
+    
+    id = Column(Integer, index=True, primary_key=True)
+    day_l = Column(String)
+    day_r = Column(String)
+    
+    hour_l = Column(Integer)
+    hour_r = Column(Integer)
+
+    minute_l = Column(Integer)
+    minute_r = Column(Integer)
+    
+    interval1 = Column(Integer)
+    interval2 = Column(Integer)
+
+
+class ContactOrm(Model):
+    __tablename__ = "contacts"
+    
+    id = Column(Integer, index=True, primary_key=True)
+    channel = Column(String)
+    contact = Column(String)
+    
+
+class AlertsOrm(Model):
+    __tablename__ = "alerts"
+    
+    id = Column(Integer, index=True, primary_key=True)
+    first_log = Column(String)
+    first_log_channel = Column(String)
+    
+    second_log = Column(String)
+    second_log_channel = Column(String)
+    
+    trades_recovered = Column(String)
+    trades_recovered_channel = Column(String)
+    
+    first_ping = Column(String)
+    first_ping_channel = Column(String)
+    
+    second_ping = Column(String)
+    second_ping_channel = Column(String)
+    
+    pings_recovered = Column(String)
+    pings_recovered_channel = Column(String)

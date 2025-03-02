@@ -4,7 +4,7 @@ from pydantic import Extra
 from pydantic_settings import BaseSettings
 
 
-class AdminSettings(BaseSettings):
+class AdminConfig(BaseSettings):
     admin_secret_key: str
     debug: bool
 
@@ -14,5 +14,5 @@ class AdminSettings(BaseSettings):
 
 
 @lru_cache
-def get_admin_config() -> AdminSettings:
-    return AdminSettings()
+def get_admin_config() -> AdminConfig:
+    return AdminConfig()

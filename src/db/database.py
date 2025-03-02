@@ -2,12 +2,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from src.db.db_config import get_db_config
+from src.db.get_db_conf import get_db_config
+
 
 SQLALCHEMY_DATABASE_URL = get_db_config().DATABASE_URL
 SQLALCHEMY_SYNC_DATABASE_URL = get_db_config().SYNC_DATABASE_URL
 
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_async_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30
+)
+
 sync_engine = create_engine(SQLALCHEMY_SYNC_DATABASE_URL)
 
 new_session = async_sessionmaker(engine, expire_on_commit=False)

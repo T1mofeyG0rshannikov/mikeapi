@@ -1,11 +1,7 @@
-from typing import Annotated
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from src.db.database import SessionLocal
-from src.dependencies import get_log_repository
-from src.repositories.log_repository import LogRepository
-from src.create_failure_log import CreateFailureLog
+from src.dependencies.base_dependencies import get_log_repository
 from src.exceptions import (
     APIServerError,
     InvalidAuthTokenError,
@@ -13,25 +9,27 @@ from src.exceptions import (
     NotPermittedError,
     VendorNotFoundError,
 )
-from src.schemas.common import APIResponse
+from src.usecases.create_failure_log import CreateFailureLog
 
 
-def get_create_failure_log(
-    log_repository=get_log_repository(db=SessionLocal())
-):
+async def get_create_failure_log():
+    log_repository = await get_log_repository()
     return CreateFailureLog(log_repository)
 
-async def server_error_exc_handler(request: Request, exc: APIServerError, create_failure_log=get_create_failure_log()) -> JSONResponse:
+async def server_error_exc_handler(request: Request, exc: APIServerError) -> JSONResponse:
+    create_failure_log = await get_create_failure_log()
     await create_failure_log(request)
     return JSONResponse(status_code=500, content={"error": "Internal server error", "details": exc.message})
 
 
-async def invalid_auth_token_exc_handler(request: Request, exc: InvalidAuthTokenError,  create_failure_log=get_create_failure_log()) -> JSONResponse:
+async def invalid_auth_token_exc_handler(request: Request, exc: InvalidAuthTokenError) -> JSONResponse:
+    create_failure_log = await get_create_failure_log()
     await create_failure_log(request)
     return JSONResponse(status_code=401, content={"error": "auth error", "details": exc.message})
 
 
-async def vendor_not_found_exc_handler(request: Request, exc: VendorNotFoundError, create_failure_log=get_create_failure_log()) -> JSONResponse:
+async def vendor_not_found_exc_handler(request: Request, exc: VendorNotFoundError) -> JSONResponse:
+    create_failure_log = await get_create_failure_log()
     await create_failure_log(request)
     return JSONResponse(status_code=404, content={"error": "Resource not found", "details": exc.message})
 
@@ -40,7 +38,8 @@ async def not_permitted_exc_handler(request: Request, exc: NotPermittedError) ->
     return JSONResponse(status_code=404, content={"error": "Resource not permitted", "details": exc.message})
 
 
-async def invalid_create_log_request_exc_handler(request: Request, exc: InvalidCreateLogRequest, create_failure_log=get_create_failure_log()) -> JSONResponse:
+async def invalid_create_log_request_exc_handler(request: Request, exc: InvalidCreateLogRequest) -> JSONResponse:
+    create_failure_log = await get_create_failure_log()
     await create_failure_log(request)
     return JSONResponse(status_code=200, content={"status": "fail"})
 

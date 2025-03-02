@@ -1,17 +1,20 @@
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 
-from src.admin.config import get_admin_config
-from src.dependencies import get_jwt_processor, get_password_hasher
-from src.depends.func_depends import get_user_repository
+from src.dependencies.base_dependencies import get_user_repository
+from src.auth.jwt_processor import JwtProcessor
+from src.password_hasher import PasswordHasher
+from src.admin.config import AdminConfig
 from src.repositories.user_repository import UserRepository
 from src.schemas.login import LoginResponse
 
 
-class AdminAuth(AuthenticationBackend):
-    password_hasher = get_password_hasher()
-    jwt_processor = get_jwt_processor()
-    config = get_admin_config()
+class AdminAuth(AuthenticationBackend):    
+    def __init__(self, secret_key: str, password_hasher: PasswordHasher, config: AdminConfig, jwt_processor: JwtProcessor) -> None:
+        super().__init__(secret_key)
+        self.password_hasher = password_hasher
+        self.jwt_processor = jwt_processor
+        self.config = config
 
     async def login(self, request: Request, user_repository: UserRepository = get_user_repository()) -> LoginResponse:
         if self.config.debug:

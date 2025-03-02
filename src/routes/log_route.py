@@ -6,7 +6,7 @@ import pytz
 from fastapi import APIRouter, Depends, Response
 
 from src.db.models.models import UrlEnum
-from src.dependencies import (
+from src.dependencies.dependencies import (
     get_app,
     get_is_main_server,
     get_log_repository,

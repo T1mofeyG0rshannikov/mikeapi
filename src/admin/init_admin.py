@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 
+from src.dependencies.base_dependencies import get_jwt_processor, get_password_hasher
+from src.admin.model_views.alerts import AlertsAdmin
+from src.admin.model_views.scheduler import SchedulerAdmin
+from src.admin.model_views.contacts import ContactAdmin
 from src.admin.admin import CustomAdmin
 from src.admin.auth import AdminAuth
 from src.admin.config import get_admin_config
@@ -19,7 +23,12 @@ from src.db.database import engine
 
 
 def init_admin(app: FastAPI):
-    authentication_backend = AdminAuth(secret_key=get_admin_config().admin_secret_key)
+    authentication_backend = AdminAuth(
+        secret_key=get_admin_config().admin_secret_key,
+        jwt_processor=get_jwt_processor(),
+        password_hasher=get_password_hasher(),
+        config=get_admin_config()
+    )
     admin = CustomAdmin(
         app=app, engine=engine, authentication_backend=authentication_backend, templates_dir="src/admin/templates"
     )
@@ -33,3 +42,6 @@ def init_admin(app: FastAPI):
     admin.add_view(SettingsAdmin)
     admin.add_view(PingAdmin)
     admin.add_view(UnsuccesslogAdmin)
+    admin.add_view(ContactAdmin)
+    admin.add_view(SchedulerAdmin)
+    admin.add_view(AlertsAdmin)

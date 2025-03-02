@@ -1,8 +1,7 @@
 import asyncio
 from getpass import getpass
 
-from src.dependencies import get_password_hasher
-from src.depends.func_depends import get_user_repository
+from src.dependencies.base_dependencies import get_password_hasher, get_user_repository
 from src.password_hasher import PasswordHasher
 from src.repositories.user_repository import UserRepository
 

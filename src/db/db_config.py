@@ -21,8 +21,3 @@ class DbConfig(BaseSettings):
     class Config:
         env_file = ".env"
         extra = "allow"
-
-
-@lru_cache
-def get_db_config() -> DbConfig:
-    return DbConfig()

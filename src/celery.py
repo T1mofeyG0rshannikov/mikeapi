@@ -2,12 +2,12 @@ import asyncio
 import os
 
 from celery import Celery
-from src.create_traders.create_traders import CreateTraders
-from src.repositories.vendor_repository import VendorRepository
+from src.dependencies.base_dependencies import get_vendor_repository
 from src.entites.trader import TraderWatch
-from src.create_usernames import AddUsernames, CreateUsernameDTO
 from src.db.database import SessionLocal
 from src.repositories.trader_repository import TraderRepository
+from src.usecases.create_traders.create_traders import CreateTraders
+from src.usecases.create_usernames import AddUsernames, CreateUsernameDTO
 
 celery = Celery(__name__)
 celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
@@ -17,7 +17,7 @@ celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://lo
 @celery.task
 def create_usernames_task(strings, watch=TraderWatch.pre, action=None):
     db = SessionLocal()    
-    usecase = AddUsernames(TraderRepository(db), VendorRepository(db))
+    usecase = AddUsernames(TraderRepository(db), get_vendor_repository())
 
     users = []
 

@@ -9,12 +9,12 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
+from src.dependencies.base_dependencies import get_jwt_processor
 from src.auth.jwt_processor import JwtProcessor
 from src.celery import create_traders_task, create_usernames_task
 from src.db.models.models import TradersBuffer, UserOrm
-from src.dependencies import (
+from src.dependencies.dependencies import (
     get_db,
-    get_jwt_processor,
     get_user_repository,
 )
 from src.entites.trader import LoadTraderAction, TraderWatch
@@ -29,7 +29,7 @@ async def get_user(
     request: Request,
     jwt_processor: JwtProcessor = Depends(get_jwt_processor),
     user_repository: UserRepository = Depends(get_user_repository),
-):
+) -> UserOrm:
     token = request.session.get("token")
     if token:
         payload = jwt_processor.validate_token(token)
@@ -110,7 +110,6 @@ async def add_subscribes(
     txt_data=Depends(get_txt_file),
 ):
     create_usernames_task.delay(txt_data, watch=TraderWatch.on, action=LoadTraderAction.subscribes)
-    #return await create_usernames(users=txt_data, watch=TraderWatch.on, action=LoadTraderAction.subscribes, app=vendor)
 
 
 @router.delete("/clear-buffer/")

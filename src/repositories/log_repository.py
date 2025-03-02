@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, exists, and_
 
 from src.db.models.models import LogOrm, TickerOrm, TraderOrm, UnsuccessLog
 from src.repositories.base_reposiotory import BaseRepository
@@ -49,3 +49,8 @@ class LogRepository(BaseRepository):
         log = UnsuccessLog(body=body)
         self.db.add(log)
         await self.db.commit()
+        
+    async def exists(self, created_at_l: datetime, created_at_r: datetime) -> bool:
+        #exist = await self.db.execute(select(LogOrm))
+        exist = await self.db.execute(select(LogOrm).where(and_(LogOrm.created_at<=created_at_r, LogOrm.created_at>=created_at_l)))
+        return not (exist.scalars().first() is None)
