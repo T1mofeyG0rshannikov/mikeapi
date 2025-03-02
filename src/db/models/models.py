@@ -312,3 +312,6 @@ class AlertsOrm(Model):
     
     pings_recovered = Column(String)
     pings_recovered_channel = Column(String)
+    
+    pings_interval1 = Column(Integer)
+    pings_interval2 = Column(Integer)

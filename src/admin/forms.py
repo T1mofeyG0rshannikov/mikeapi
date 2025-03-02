@@ -74,6 +74,9 @@ class AlertsForm(Form):
     
     pings_recovered = StringField("Пинги восстановлены: <текст>")
     pings_recovered_channel = SelectField("Пинги восстановлены: <тип>", choices=AlertChannels.values_list)
+    
+    pings_interval1 = IntegerField("Пинги интервал 1")
+    pings_interval2 = IntegerField("Пинги интервал 2")
 
 
 class SchedulerForm(Form):

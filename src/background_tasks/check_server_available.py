@@ -109,19 +109,6 @@ class CheckServerActivity:
             
             if week_day in rule.weekrange:
                 if rule.time_l <= time.time() <= rule.time_r:
-                    if time.time().minute % rule.interval1 == 0:
-                        time_l = time - timedelta(minutes=rule.interval1)
-                        log_exists = await self.repository.exists(created_at_l=time_l, created_at_r=time)
-
-                        if not log_exists:
-                            if not self.alerts_service.is_first_send():
-                                await self.send_warning(time, first=True)
-                                self.alerts_service.set_first_send(True)
-                        else:
-                            if not self.alerts_service.is_pulled_up():
-                                self.alerts_service.set_pulled_up()
-                                await self.send_recovered(time, logs=True)
-
                     if time.time().minute % rule.interval2 == 0:
                         time_l = time - timedelta(minutes=rule.interval2)
                         log_exists = await self.repository.exists(created_at_l=time_l, created_at_r=time)
@@ -136,25 +123,51 @@ class CheckServerActivity:
                             if not self.alerts_service.is_pulled_up():
                                 self.alerts_service.set_pulled_up()
                                 await self.send_recovered(time, logs=True)
+                                
+                    elif time.time().minute % rule.interval1 == 0:
+                        time_l = time - timedelta(minutes=rule.interval1)
+                        log_exists = await self.repository.exists(created_at_l=time_l, created_at_r=time)
+
+                        if not log_exists:
+                            if not self.alerts_service.is_first_send():
+                                await self.send_warning(time, first=True)
+                                self.alerts_service.set_first_send(True)
+                        else:
+                            if not self.alerts_service.is_pulled_up():
+                                self.alerts_service.set_pulled_up()
+                                await self.send_recovered(time, logs=True)
     
     async def check_pings(self) -> None:
-        time = datetime.now(timezone('utc')) 
+        alerts = await self.scheduler_repository.alerts()
         
-        time_l = time - timedelta(minutes=1)
-        ping_exists = await self.ping_repository.exists(created_at_l=time_l, created_at_r=time)
+        time = datetime.now(timezone('utc'))
+        
+        if time.minute % alerts.pings_interval2 == 0:
+            time_l = time - timedelta(minutes=alerts.pings_interval2)
+            ping_exists = await self.ping_repository.exists(created_at_l=time_l, created_at_r=time)
 
-        if ping_exists:
-            if not self.alerts_service.is_pulled_up_ping():
-                await self.send_recovered(time, logs=False)
-                self.alerts_service.set_pulled_up_ping()
-        else:
-            if not self.alerts_service.is_first_send_ping():
-                await self.send_warning(time, first=True, logs=False)
-                self.alerts_service.set_first_send_ping(True)
+            if not ping_exists:
+                if self.alerts_service.is_first_send_ping():
+                    if not self.alerts_service.is_second_send_ping():
+                        await self.send_warning(time, first=False, logs=False)
+                        self.alerts_service.set_second_send_ping(True)
             else:
-                if not self.alerts_service.is_second_send_ping():
-                    await self.send_warning(time, first=False, logs=False)
-                    self.alerts_service.set_second_send_ping(True)
+                if not self.alerts_service.is_pulled_up_ping():
+                    self.alerts_service.set_pulled_up_ping()
+                    await self.send_recovered(time, logs=False)
+        
+        elif time.minute % alerts.pings_interval1 == 0:
+            time_l = time - timedelta(minutes=alerts.pings_interval1)
+            ping_exists = await self.ping_repository.exists(created_at_l=time_l, created_at_r=time)
+
+            if not ping_exists:
+                if not self.alerts_service.is_first_send_ping():
+                    await self.send_warning(time, logs=False, first=True)
+                    self.alerts_service.set_first_send_ping(True)
+            else:
+                if not self.alerts_service.is_pulled_up_ping():
+                    self.alerts_service.set_pulled_up_ping()
+                    await self.send_recovered(time, logs=False)
 
     async def __call__(self) -> None:
         await self.check_pings()
