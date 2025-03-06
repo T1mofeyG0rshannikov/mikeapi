@@ -19,7 +19,6 @@ sync_engine = create_engine(SQLALCHEMY_SYNC_DATABASE_URL)
 
 new_session = async_sessionmaker(engine, expire_on_commit=False)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
 Session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
 

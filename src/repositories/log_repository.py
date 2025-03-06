@@ -54,3 +54,7 @@ class LogRepository(BaseRepository):
         #exist = await self.db.execute(select(LogOrm))
         exist = await self.db.execute(select(LogOrm).where(and_(LogOrm.created_at<=created_at_r, LogOrm.created_at>=created_at_l)))
         return not (exist.scalars().first() is None)
+    
+    async def last(self):
+        trade = await self.db.execute(select(LogOrm).order_by(LogOrm.id.desc()).limit(1))
+        return trade.scalars().first()

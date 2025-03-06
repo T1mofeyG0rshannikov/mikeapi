@@ -13,9 +13,9 @@ class UnsuccesslogAdmin(ModelView, model=UnsuccessLog):
 
     column_formatters = {
         UnsuccessLog.body: lambda m, a: Markup(f"<pre>{m.body}</pre>" if m.body else ""),
-        UnsuccessLog.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
-            "%d.%m.%Y %H:%M:%S"
-        ),
+        #UnsuccessLog.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
+        #    "%d.%m.%Y %H:%M:%S"
+        #),
     }
 
     column_default_sort = ("id", "desc")

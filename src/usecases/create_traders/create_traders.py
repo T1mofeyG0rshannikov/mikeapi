@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy import select
 
-from src.db.database import SessionLocal
+from src.db.database import get_db
 from src.db.models.models import TraderOrm
 from src.entites.trader import TraderWatch
 from src.generate_user_code import code_exists, generate_code, get_code_index
@@ -14,7 +14,7 @@ class CreateTraders:
         self.traders_repository = repository
 
     async def __call__(self, csv_data: list[str]) -> None:
-        async with SessionLocal() as db:
+        async for db in get_db():
             exist_codes = await self.traders_repository.get_codes()
 
             traders_data = traders_data_from_csv(csv_data)

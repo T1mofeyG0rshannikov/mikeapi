@@ -21,3 +21,7 @@ class PingRepository(BaseRepository):
         #exist = await self.db.execute(select(PingOrm))
         exist = await self.db.execute(select(PingOrm).where(and_(PingOrm.created_at<=created_at_r, PingOrm.created_at>=created_at_l)))
         return not (exist.scalars().first() is None)
+    
+    async def last(self) -> PingOrm:
+        trade = await self.db.execute(select(PingOrm).order_by(PingOrm.id.desc()).limit(1))
+        return trade.scalar()

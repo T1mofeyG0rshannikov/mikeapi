@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from src.dependencies.base_dependencies import get_log_repository
+from src.db.database import get_db
+from src.dependencies.dependencies import get_log_repository
 from src.exceptions import (
     APIServerError,
     InvalidAuthTokenError,
@@ -12,24 +13,23 @@ from src.exceptions import (
 from src.usecases.create_failure_log import CreateFailureLog
 
 
-async def get_create_failure_log():
-    log_repository = await get_log_repository()
-    return CreateFailureLog(log_repository)
+async def create_failure_log(request: Request):
+    async for db in get_db():
+        log_repository = get_log_repository(db)
+        usecase = CreateFailureLog(log_repository)
+        await usecase(request)
 
 async def server_error_exc_handler(request: Request, exc: APIServerError) -> JSONResponse:
-    create_failure_log = await get_create_failure_log()
     await create_failure_log(request)
     return JSONResponse(status_code=500, content={"error": "Internal server error", "details": exc.message})
 
 
 async def invalid_auth_token_exc_handler(request: Request, exc: InvalidAuthTokenError) -> JSONResponse:
-    create_failure_log = await get_create_failure_log()
     await create_failure_log(request)
     return JSONResponse(status_code=401, content={"error": "auth error", "details": exc.message})
 
 
 async def vendor_not_found_exc_handler(request: Request, exc: VendorNotFoundError) -> JSONResponse:
-    create_failure_log = await get_create_failure_log()
     await create_failure_log(request)
     return JSONResponse(status_code=404, content={"error": "Resource not found", "details": exc.message})
 
@@ -39,7 +39,6 @@ async def not_permitted_exc_handler(request: Request, exc: NotPermittedError) ->
 
 
 async def invalid_create_log_request_exc_handler(request: Request, exc: InvalidCreateLogRequest) -> JSONResponse:
-    create_failure_log = await get_create_failure_log()
     await create_failure_log(request)
     return JSONResponse(status_code=200, content={"status": "fail"})
 

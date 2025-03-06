@@ -5,6 +5,7 @@ from wtforms import (
     PasswordField,
     SelectField,
     StringField,
+    TextAreaField
 )
 from wtforms.validators import InputRequired, Optional
 
@@ -54,25 +55,26 @@ class TickerForm(Form):
 class ContactForm(Form):
     channel = SelectField("Тип", choices=ContactChannel.values_list)
     contact = StringField("Контакт")
+    recipient = StringField("Получатель")
 
 
 class AlertsForm(Form):
-    first_log = StringField("Нет сделок 1: <текст>")
+    first_log = StringField("Нет сделок 1: <текст>", render_kw={"style": "width: 500px;"})
     first_log_channel = SelectField("Нет сделок 1: <тип>", choices=AlertChannels.values_list)
     
-    second_log = StringField("Нет сделок 2: <текст>")
+    second_log = StringField("Нет сделок 2: <текст>", render_kw={"style": "width: 500px;"})
     second_log_channel = SelectField("Нет сделок 2: <тип>", choices=AlertChannels.values_list)
     
-    first_ping = StringField("Нет пинга 1: <текст>")
+    first_ping = StringField("Нет пинга 1: <текст>", render_kw={"style": "width: 500px;"})
     first_ping_channel = SelectField("Нет пинга 1: <тип>", choices=AlertChannels.values_list)
     
-    second_ping = StringField("Нет пинга 2: <текст>")
+    second_ping = StringField("Нет пинга 2: <текст>", render_kw={"style": "width: 500px;"})
     second_ping_channel = SelectField("Нет пинга 2: <тип>", choices=AlertChannels.values_list)
     
-    trades_recovered = StringField("Сделки восстановлены: <текст>")
+    trades_recovered = StringField("Сделки восстановлены: <текст>", render_kw={"style": "width: 500px;"})
     trades_recovered_channel = SelectField("Сделки восстановлены: <тип>", choices=AlertChannels.values_list)
     
-    pings_recovered = StringField("Пинги восстановлены: <текст>")
+    pings_recovered = StringField("Пинги восстановлены: <текст>", render_kw={"style": "width: 500px;"})
     pings_recovered_channel = SelectField("Пинги восстановлены: <тип>", choices=AlertChannels.values_list)
     
     pings_interval1 = IntegerField("Пинги интервал 1")
@@ -84,9 +86,9 @@ class SchedulerForm(Form):
     day_r = SelectField("день от", choices=WeekDays.values_list)
     
     hour_l = IntegerField()
-    hour_r = IntegerField()
-
     minute_l = IntegerField()
+
+    hour_r = IntegerField()
     minute_r = IntegerField()
     
     interval1 = IntegerField()

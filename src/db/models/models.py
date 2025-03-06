@@ -289,6 +289,7 @@ class ContactOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
     channel = Column(String)
     contact = Column(String)
+    recipient = Column(String)
     
 
 class AlertsOrm(Model):
@@ -315,3 +316,10 @@ class AlertsOrm(Model):
     
     pings_interval1 = Column(Integer)
     pings_interval2 = Column(Integer)
+
+
+class ServerUnavailableLogOrm(Model):
+    __tablename__ = "servererrors"
+    
+    id = Column(Integer, index=True, primary_key=True)
+    log = Column(String)

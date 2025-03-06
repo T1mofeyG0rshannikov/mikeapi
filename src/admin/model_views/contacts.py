@@ -4,7 +4,7 @@ from src.db.models.models import ContactOrm
 
 
 class ContactAdmin(BaseModelView, model=ContactOrm):
-    column_list = [ContactOrm.channel, ContactOrm.contact]
+    column_list = [ContactOrm.channel, ContactOrm.contact, ContactOrm.recipient]
 
     name = "Контакты"
     name_plural = "Контакты"

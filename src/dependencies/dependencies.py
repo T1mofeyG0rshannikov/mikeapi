@@ -4,16 +4,12 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.repositories.server_log_repositrory import ServerLogRepository
+from src.repositories.ticker_repository import TickerRepository
 from src.repositories.scheduler_repository import SchedulerRepository
-from src.background_tasks.check_server_available import CheckServerActivity
-from src.sms_sender.config import SMSAeroConfig
-from src.sms_sender.sender import SMSSender
-from src.auth.jwt_config import JwtConfig, get_jwt_config
-from src.auth.jwt_processor import JwtProcessor
 from src.db.database import get_db
 from src.entites.vendor import Vendor
 from src.exceptions import InvalidAuthTokenError, UrlNotFound, VendorNotFoundError
-from src.password_hasher import PasswordHasher
 from src.repositories.log_repository import LogRepository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.trader_repository import TraderRepository
@@ -28,6 +24,10 @@ def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
 
 
+def get_ticker_repository(db: AsyncSession = Depends(get_db)) -> TickerRepository:
+    return TickerRepository(db)
+
+
 def get_vendor_repository(db: AsyncSession = Depends(get_db)) -> VendorRepository:
     return VendorRepository(db)
 
@@ -39,28 +39,14 @@ def get_log_repository(db: AsyncSession = Depends(get_db)) -> LogRepository:
 def get_trader_repository(db: AsyncSession = Depends(get_db)) -> TraderRepository:
     return TraderRepository(db)
 
-'''
-@lru_cache
-def get_password_hasher() -> PasswordHasher:
-    return PasswordHasher()
-'''
-'''
-def get_jwt_processor(config: JwtConfig = get_jwt_config()) -> JwtProcessor:
-    return JwtProcessor(config)
-'''
 
 def get_ping_repository(db: Annotated[AsyncSession, Depends(get_db)]) -> PingRepository:
     return PingRepository(db)
 
-'''
-@lru_cache
-def get_sms_config() -> SMSAeroConfig:
-    return SMSAeroConfig()
-'''
-'''
-def get_sms_service(config: SMSAeroConfig = get_sms_config()) -> SMSSender:
-    return SMSSender(config)
-'''
+
+def get_server_log_repository(db: Annotated[AsyncSession, Depends(get_db)]) -> ServerLogRepository:
+    return ServerLogRepository(db)
+
 
 async def get_is_main_server(
     api_url: str,
