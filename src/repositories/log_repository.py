@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from sqlalchemy import select, exists, and_
+from sqlalchemy import select, and_
 
 from src.db.models.models import LogOrm, TickerOrm, TraderOrm, UnsuccessLog
 from src.repositories.base_reposiotory import BaseRepository
@@ -34,9 +34,9 @@ class LogRepository(BaseRepository):
         return log
 
     async def get_ticker(self, slug: str) -> TickerOrm:
-        query = select(TickerOrm).where(TickerOrm.slug == slug)
+        query = select(TickerOrm).where(TickerOrm.slug == slug).limit(1)
         ticker = await self.db.execute(query)
-        return ticker.scalars().first()
+        return ticker.scalar()
 
     async def create_ticker(self, slug: str, currency: str) -> TickerOrm:
         ticker = TickerOrm(slug=slug, currency=currency)
@@ -53,8 +53,8 @@ class LogRepository(BaseRepository):
     async def exists(self, created_at_l: datetime, created_at_r: datetime) -> bool:
         #exist = await self.db.execute(select(LogOrm))
         exist = await self.db.execute(select(LogOrm).where(and_(LogOrm.created_at<=created_at_r, LogOrm.created_at>=created_at_l)))
-        return not (exist.scalars().first() is None)
+        return not (exist.scalar() is None)
     
     async def last(self):
         trade = await self.db.execute(select(LogOrm).order_by(LogOrm.id.desc()).limit(1))
-        return trade.scalars().first()
+        return trade.scalar()

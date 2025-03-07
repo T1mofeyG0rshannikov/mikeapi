@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from src.admin.model_views.server_log import ServerLogAdmin
+from src.admin.model_views.device import VendorAdmin
 from src.dependencies.base_dependencies import get_jwt_processor, get_password_hasher
 from src.admin.model_views.alerts import AlertsAdmin
 from src.admin.model_views.scheduler import SchedulerAdmin
@@ -17,7 +19,6 @@ from src.admin.views import (
     LogActivityAdmin,
     SettingsAdmin,
     UserAdmin,
-    VendorAdmin,
 )
 from src.db.database import engine
 
@@ -45,3 +46,4 @@ def init_admin(app: FastAPI):
     admin.add_view(ContactAdmin)
     admin.add_view(SchedulerAdmin)
     admin.add_view(AlertsAdmin)
+    admin.add_view(ServerLogAdmin)

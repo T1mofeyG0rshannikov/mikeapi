@@ -1,4 +1,4 @@
-from src.db.models.models import PingOrm, ServerUnavailableLogOrm
+from src.db.models.models import ServerUnavailableLogOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 
@@ -7,8 +7,8 @@ class ServerLogRepository(BaseRepository):
         self,
         body: str
     ) -> ServerUnavailableLogOrm:
-        log = PingOrm(
-            body=body,
+        log = ServerUnavailableLogOrm(
+            log=body,
         )
 
         self.db.add(log)

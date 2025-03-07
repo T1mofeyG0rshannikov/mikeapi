@@ -23,15 +23,6 @@ class UserAdmin(ModelView, model=UserOrm):
     name_plural = "Пользователи"
 
 
-class VendorAdmin(ModelView, model=VendorOrm):
-    column_list = [VendorOrm.app_id, VendorOrm.auth_token]
-
-    form = VendorCreateForm
-
-    name = "Приложение"
-    name_plural = "Приложения"
-
-
 class APIUrlsAdmin(ModelView, model=APIURLSOrm):
     column_list = [APIURLSOrm.main_url, APIURLSOrm.reverse_url]
 

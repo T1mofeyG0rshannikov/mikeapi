@@ -14,24 +14,28 @@ class CheckServer:
         self.repository = repository
         self.c = config
         
-    def __call__(self) -> None:
+    async def __call__(self) -> None:
+        now = datetime.now()
         last_available = self.r.get(self.c.ACTIVITY_TIME)
         if last_available is None:
-            self.r.set(self.c.ACTIVITY_TIME, time.mktime(now.timetuple()))
+            self.r.set(self.c.ACTIVITY_TIME, int(time.mktime(now.timetuple())))
             return
 
         last_available = datetime.fromtimestamp(int(self.r.get(self.c.ACTIVITY_TIME)))
-        now = datetime.now()
         
         diff = (now - last_available).total_seconds()
         if diff > 70:
-            self.repository.create(
-                body=f'''Сервер был недоступен с {last_available.strftime("%H:%M:%S")} - Сервер возобновил работу в {now.strftime("%H:%M:%S")}'''
+            await self.repository.create(
+                body=f'''Сервер был недоступен с {last_available.strftime("%d.%m.%Y %H:%M:%S")}'''
             )
             
-        self.r.set(self.c.ACTIVITY_TIME, time.mktime(now.timetuple()))
+            await self.repository.create(
+                body=f'''Сервер возобновил работу в {now.strftime("%d.%m.%Y %H:%M:%S")}'''
+            )
+            
+        self.r.set(self.c.ACTIVITY_TIME, int(time.mktime(now.timetuple())))
+        print("activity")
         
-import asyncio
 
 async def check_server():
     async for db in get_db():
@@ -45,9 +49,3 @@ async def check_server():
             config=check_server_config
         )
         await check_server_usecase()
-
-    
-def check_server_job():
-    
-
-    asyncio.get_event_loop().run_until_complete(check_server())

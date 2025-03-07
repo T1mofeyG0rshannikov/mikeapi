@@ -1,6 +1,6 @@
 from sqlalchemy import func, select
 
-from src.db.models.models import TraderOrm, VendorOrm
+from src.db.models.models import TraderOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 
@@ -15,9 +15,9 @@ class TraderRepository(BaseRepository):
         await self.db.commit()
 
     async def get(self, username: str) -> TraderOrm:
-        query = select(TraderOrm).where(func.lower(TraderOrm.username) == func.lower(username))
+        query = select(TraderOrm).where(func.lower(TraderOrm.username) == func.lower(username)).limit(1)
         result = await self.db.execute(query)
-        return result.scalars().first()
+        return result.scalar()
 
     async def create(self, username: str, code: str, watch: str = "new", app_id: int | None = None) -> TraderOrm:
         trader = TraderOrm(username=username, code=code, watch=watch, app_id=app_id)

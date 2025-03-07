@@ -1,4 +1,5 @@
 from pytz import timezone
+from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ping_repository import PingRepository
 from src.alerts_service.service import AlertsService
 from src.sms_sender.sender import SMSSender
@@ -7,7 +8,7 @@ from src.repositories.vendor_repository import VendorRepository
 from src.entites.alert import AlertChannels
 from src.repositories.log_repository import LogRepository
 from src.repositories.scheduler_repository import SchedulerRepository
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from src.telegram_sender.sender import TelegramSender
 
@@ -21,7 +22,8 @@ class CheckServerActivity:
         telegram_sender: TelegramSender,
         sms_sender: SMSSender,
         alerts_service: AlertsService,
-        ping_repository: PingRepository
+        ping_repository: PingRepository,
+        server_log_repository: ServerLogRepository
     ) -> None:
         self.ping_repository = ping_repository
         self.sms_sender = sms_sender
@@ -30,6 +32,7 @@ class CheckServerActivity:
         self.scheduler_repository = scheduler_repository
         self.vendor_repository = vendor_repository
         self.alerts_service = alerts_service
+        self.server_log_repository = server_log_repository
 
     async def format_message(self, message: str, time) -> str:
         device = await self.vendor_repository.first()
@@ -53,7 +56,7 @@ class CheckServerActivity:
             if contact.channel == ContactChannel.phone:
                 await self.sms_sender.send(int(contact.contact), message)
         
-    async def send_warning(self, time: datetime, first=True, logs=True) -> None:
+    async def send_warning(self, time: datetime, first:bool=True, logs:bool=True) -> None:
         alerts = await self.scheduler_repository.alerts()
 
         if first:
@@ -82,7 +85,7 @@ class CheckServerActivity:
             await self.send_telegram(message, time)
             await self.send_sms(message, time)
 
-    async def send_recovered(self, time, logs=True):
+    async def send_recovered(self, time, logs: bool=True) -> None:
         alerts = await self.scheduler_repository.alerts()
         if logs:
             message = alerts.trades_recovered
@@ -114,7 +117,7 @@ class CheckServerActivity:
                         return
                     
                     minutes_diff = (time - last_trade.created_at).total_seconds() / 60
-                    #minutes_diff = rule.interval1+0.5
+
                     time = last_trade.created_at
                     if minutes_diff > rule.interval2:
                         if not self.alerts_service.is_second_send():
@@ -124,10 +127,17 @@ class CheckServerActivity:
                         if not self.alerts_service.is_first_send():
                             await self.send_warning(time, first=True)
                             self.alerts_service.set_first_send(True)
+                            await self.server_log_repository.create(
+                                body=f'''Шлюз недоступен с {time.strftime("%d.%m.%Y %H:%M:%S")}'''
+                            )
                     else:
                         if not self.alerts_service.is_pulled_up():
                             self.alerts_service.set_pulled_up()
                             await self.send_recovered(time, logs=True)
+                            await self.server_log_repository.create(
+                                body=f'''Шлюз восстановлен в {time.strftime("%d.%m.%Y %H:%M:%S")}'''
+                            )
+
 
     async def check_pings(self) -> None:
         alerts = await self.scheduler_repository.alerts()
@@ -154,33 +164,6 @@ class CheckServerActivity:
                 self.alerts_service.set_pulled_up_ping()
                 await self.send_recovered(time, logs=False)
         
-        '''if time.minute % alerts.pings_interval2 == 0:
-            time_l = time - timedelta(minutes=alerts.pings_interval2)
-            ping_exists = await self.ping_repository.exists(created_at_l=time_l, created_at_r=time)
-
-            if not ping_exists:
-                if self.alerts_service.is_first_send_ping():
-                    if not self.alerts_service.is_second_send_ping():
-                        await self.send_warning(time, first=False, logs=False)
-                        self.alerts_service.set_second_send_ping(True)
-            else:
-                if not self.alerts_service.is_pulled_up_ping():
-                    self.alerts_service.set_pulled_up_ping()
-                    await self.send_recovered(time, logs=False)
-        
-        elif time.minute % alerts.pings_interval1 == 0:
-            time_l = time - timedelta(minutes=alerts.pings_interval1)
-            ping_exists = await self.ping_repository.exists(created_at_l=time_l, created_at_r=time)
-
-            if not ping_exists:
-                if not self.alerts_service.is_first_send_ping():
-                    await self.send_warning(time, logs=False, first=True)
-                    self.alerts_service.set_first_send_ping(True)
-            else:
-                if not self.alerts_service.is_pulled_up_ping():
-                    self.alerts_service.set_pulled_up_ping()
-                    await self.send_recovered(time, logs=False)'''
-
     async def __call__(self) -> None:
         await self.check_pings()
         await self.check_trades()

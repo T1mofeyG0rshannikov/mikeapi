@@ -2,11 +2,12 @@ import pytz
 from fastapi.requests import Request
 
 from sqlalchemy import (
-    and_
+    and_, func, select
 )
 from starlette.requests import Request
+from src.db.database import Session
 from src.admin.model_views.base import BaseModelView
-from src.db.models.models import LogOrm
+from src.db.models.models import LogOrm, SettingsOrm
 
 
 class LogAdmin(BaseModelView, model=LogOrm):
@@ -28,7 +29,6 @@ class LogAdmin(BaseModelView, model=LogOrm):
 
     column_default_sort = ("created_at", True)
     column_formatters = {
-        LogOrm.app: lambda log, _: str(log.app),
         LogOrm.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
             "%d.%m.%Y %H:%M:%S"
         ),
@@ -58,6 +58,11 @@ class LogAdmin(BaseModelView, model=LogOrm):
         
         filters = and_()        
         if delayed:
-            filters &= and_(LogOrm.delayed == delayed)
+            db = Session()            
+            settings = db.execute(select(SettingsOrm)).scalar()
+
+            filters &= and_(
+                func.extract('epoch', LogOrm.created_at) - func.extract('epoch', LogOrm.time) >= settings.log_delay
+            )
 
         return filters
