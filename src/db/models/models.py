@@ -20,10 +20,10 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import TIMESTAMP
 
-from src.entites.schedler import WEEKDAYS_LIST, WeekDays
 from src.db.database import Model, Session
 from src.entites.ticker import TICKER_TYPES
 from src.entites.trader import TraderStatus, TraderWatch
+from sqlalchemy import Index
 
 
 class UrlEnum(str, enum.Enum):
@@ -100,6 +100,10 @@ class TraderOrm(Model):
 
     def __str__(self) -> str:
         return self.username
+    
+    __table_args__ = (
+       Index('ix_traders_username_lower', func.lower(username)), # Индекс на lower(username)
+    )
 
 
 class LogOrm(Model):
@@ -119,22 +123,6 @@ class LogOrm(Model):
 
     ticker_id = Column(Integer, ForeignKey("tickers.id"))
     ticker = relationship("TickerOrm", back_populates="logs")
-
-    @hybrid_property
-    def delayed(self, db=Session()):
-        query = select(SettingsOrm)
-        settings = db.execute(query).scalars().first()
-
-        if self.created_at and self.time:
-            return (self.created_at - self.time).total_seconds() >= settings.log_delay
-        return None
-
-    @delayed.expression
-    def delayed(cls, db=Session()):
-        query = select(SettingsOrm)
-        settings = db.execute(query).scalars().first()
-
-        return func.extract("epoch", cls.created_at) - func.extract("epoch", cls.time) >= settings.log_delay
 
 
 class LogActivityOrm(Model):

@@ -2,6 +2,7 @@ import schedule
 import time
 import asyncio
 
+from src.dependencies.dependencies import get_server_log_repository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.scheduler_repository import SchedulerRepository
 from src.repositories.vendor_repository import VendorRepository
@@ -20,7 +21,8 @@ async def job():
             telegram_sender=get_telegram_sender(),
             sms_sender=get_sms_service(),
             alerts_service=get_alerts_service(),
-            ping_repository=PingRepository(db)
+            ping_repository=PingRepository(db),
+            server_log_repository=get_server_log_repository(db)
         )
         await check_server_activity()
 

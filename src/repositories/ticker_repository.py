@@ -12,8 +12,7 @@ class TickerRepository(BaseRepository):
         return tickers.scalars().all()
 
     async def get(self, slug: str) -> TickerOrm:
-        query = select(TickerOrm).where(TickerOrm.slug == slug)
-        ticker = await self.db.execute(query)
+        ticker = await self.db.execute(select(TickerOrm).where(TickerOrm.slug == slug))
         return ticker.scalar()
 
     async def create(self, slug: str, currency: str) -> TickerOrm:

@@ -15,8 +15,7 @@ class TraderRepository(BaseRepository):
         await self.db.commit()
 
     async def get(self, username: str) -> TraderOrm:
-        query = select(TraderOrm).where(func.lower(TraderOrm.username) == func.lower(username)).limit(1)
-        result = await self.db.execute(query)
+        result = await self.db.execute(select(TraderOrm).where(func.lower(TraderOrm.username) == func.lower(username)).limit(1))
         return result.scalar()
 
     async def create(self, username: str, code: str, watch: str = "new", app_id: int | None = None) -> TraderOrm:
@@ -29,3 +28,7 @@ class TraderRepository(BaseRepository):
         await self.db.commit()
         await self.db.refresh(trader)
         return trader
+    
+    async def all(self) -> list[TraderOrm]:
+        traders = await self.db.execute(select(TraderOrm))
+        return traders.scalars().all()
