@@ -27,7 +27,7 @@ class LogAdmin(BaseModelView, model=LogOrm):
     name_plural = "Сделки"
     list_template = "sqladmin/list-logs.html"
 
-    column_default_sort = ("created_at", True)
+    column_default_sort = ("id", "desc")
     column_formatters = {
         LogOrm.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
             "%d.%m.%Y %H:%M:%S"

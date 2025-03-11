@@ -3,9 +3,9 @@ from redis import Redis
 
 
 class AlertsService:
-    def __init__(self, redis: Redis, conf: AlertsServiceConfig) -> None:
+    def __init__(self, redis: Redis, config: AlertsServiceConfig) -> None:
         self.r = redis
-        self.c = conf
+        self.c = config
         
     def _get_value(self, key: str) -> bool:
         val = self.r.get(key)

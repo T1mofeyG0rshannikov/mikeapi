@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends
@@ -16,8 +15,6 @@ from src.repositories.trader_repository import TraderRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.vendor_repository import VendorRepository
 from src.schemas.common import AppRequest
-from src.telegram_sender.config import TelegramSenderConfig
-from src.telegram_sender.sender import TelegramSender
 
 
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
@@ -89,12 +86,3 @@ async def get_app(
 
 def get_scheduler_repository(db = Depends(get_db)):
     return SchedulerRepository(db)
-
-
-@lru_cache
-def get_telegram_config():
-    return TelegramSenderConfig()
-
-
-def get_telegram_sender(tg_config: TelegramSenderConfig = get_telegram_config()):
-    return TelegramSender(tg_config)

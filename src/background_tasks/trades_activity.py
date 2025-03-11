@@ -7,11 +7,10 @@ from src.db.database import get_db
 from src.db.models.models import LogActivityOrm, LogOrm
 
 
-async def create_log_activity() -> None:
-    print(datetime.now())
+async def trades_activity() -> None:
     async for db in get_db():
         now_msc = datetime.now(pytz.timezone("Europe/Moscow"))
-        now_utc = datetime.utcnow()
+        now_utc = datetime.now(pytz.utc)
         one_hour_ago_utc = now_utc - timedelta(hours=1)
         one_hour_ago_msc = now_msc - timedelta(hours=1)
 
@@ -25,7 +24,7 @@ async def create_log_activity() -> None:
             await db.commit()
 
         last_hour_count = await db.execute(select(func.count(LogOrm.id)).where(LogOrm.time >= one_hour_ago_utc))
-        last_hour_count = last_hour_count.scalar()
+        last_hour_count = last_hour_count.scalar_one()
 
         attr = str(now_msc.hour - 1)
         if attr == "-1":
@@ -35,5 +34,10 @@ async def create_log_activity() -> None:
 
         setattr(activity, f"hour{attr}", last_hour_count)
         activity.last_day += last_hour_count
+        print("-----activity-----")
+        print(one_hour_ago_msc)
+        print(one_hour_ago_utc)
+        print(last_hour_count)
+        print("-----activity-----")
 
         await db.commit()

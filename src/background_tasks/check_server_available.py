@@ -84,6 +84,11 @@ class CheckServerActivity:
         elif channel == AlertChannels.all:
             await self.send_telegram(message, time)
             await self.send_sms(message, time)
+        
+        message = await self.format_message(message, time)
+        await self.server_log_repository.create(
+            body=message
+        )
 
     async def send_recovered(self, time, logs: bool=True) -> None:
         alerts = await self.scheduler_repository.alerts()
@@ -101,11 +106,16 @@ class CheckServerActivity:
         elif channel == AlertChannels.all:
             await self.send_telegram(message, time)
             await self.send_sms(message, time)
+            
+        message = await self.format_message(message, time)
+        await self.server_log_repository.create(
+            body=message
+        )
 
     async def check_trades(self):
         rules = await self.scheduler_repository.all()
         for rule in rules:
-            time = datetime.now(timezone('utc')) 
+            time = datetime.now(timezone('Europe/Moscow')) 
             week_day = time.weekday()
             print(rule)
             print(rule.time_l <= time.time() <= rule.time_r)
@@ -142,7 +152,7 @@ class CheckServerActivity:
     async def check_pings(self) -> None:
         alerts = await self.scheduler_repository.alerts()
         
-        time = datetime.now(timezone('utc'))
+        time = datetime.now(timezone('Europe/Moscow'))
         
         last_ping = await self.ping_repository.last()
         if last_ping is None:
