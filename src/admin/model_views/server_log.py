@@ -9,13 +9,14 @@ from src.dependencies.container import Container
 class ServerLogAdmin(ModelView, model=ServerUnavailableLogOrm):
     column_list = [ServerUnavailableLogOrm.id, ServerUnavailableLogOrm.log]
 
-    name = "Ошибки"
-    name_plural = "Ошибки"
+    name = "Системные сбои"
+    name_plural = "Системные сбои"
 
     column_default_sort = ("id", "desc")
 
     page_size = 100
-    list_template = "sqladmin/list-errors.html"
+    marker = True
+    marker_key = 'new_errors'
     
     async def list(self, request: Request) -> Pagination:
         pagination = await super().list(request)

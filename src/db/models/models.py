@@ -97,6 +97,8 @@ class TraderOrm(Model):
 
     watches = TraderWatch
     statuses = TraderStatus
+    
+    statistics = relationship("TraderStatisticOrm", back_populates="trader")
 
     def __str__(self) -> str:
         return self.username
@@ -227,6 +229,8 @@ class SettingsOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
     log_delay = Column(Integer, default=0)
     rare_tickers_limit = Column(Integer, default=0)
+    commission = Column(Float)
+    start_date = Column(Date)
 
 
 class PingOrm(Model):
@@ -311,3 +315,28 @@ class ServerUnavailableLogOrm(Model):
     
     id = Column(Integer, index=True, primary_key=True)
     log = Column(String)
+    
+
+class TraderStatisticOrm(Model):
+    __tablename__ = "traderstatistics"
+
+    id = Column(Integer, index=True, primary_key=True)
+
+    date = Column(Date)
+    
+    trader_id = Column(Integer, ForeignKey("traders.id"))
+    trader = relationship(TraderOrm, back_populates="statistics")
+    
+    cash_balance = Column(Float) 
+
+    stock_balance = Column(Float)
+    active_lots = Column(Integer)
+
+    deals = Column(Integer)
+    
+    trade_volume = Column(Float)
+    income = Column(Float)
+
+    yield_ = Column(Float)
+    gain = Column(Float)
+    tickers = Column(Integer)

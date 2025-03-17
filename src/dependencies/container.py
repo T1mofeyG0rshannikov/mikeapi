@@ -1,4 +1,8 @@
 from dependency_injector import containers, providers
+from src.repositories.settings_repository import SettingsRepository
+from src.repositories.ticker_repository import TickerRepository
+from src.repositories.trader_repository import TraderRepository
+from src.background_tasks.traders_activity import TradersActivity
 from src.background_tasks.check_server import CheckServer
 from src.background_tasks.check_server_config import CheckServerConfig
 from src.alerts_service.config import AlertsServiceConfig
@@ -22,6 +26,8 @@ class Container(containers.Container):
     db = providers.Resource(get_db)
     log_repository = providers.Factory(LogRepository, db=db)
     vendor_repository = providers.Factory(VendorRepository, db=db)
+    ticker_repository = providers.Factory(TickerRepository, db=db)
+    trader_repository = providers.Factory(TraderRepository, db=db)
     telegram_config = providers.Singleton(TelegramSenderConfig)
     telegram_sender = providers.Singleton(TelegramSender, config=telegram_config)
     sms_config = providers.Singleton(SMSAeroConfig)
@@ -32,6 +38,7 @@ class Container(containers.Container):
     ping_repository = providers.Factory(PingRepository, db=db)
     server_log_repository = providers.Factory(ServerLogRepository, db=db)
     scheduler_repository = providers.Factory(SchedulerRepository, db=db)
+    settings_repository = providers.Factory(SettingsRepository, db=db)
     check_server_activity = providers.Factory(CheckServerActivity, 
         repository=log_repository,
         scheduler_repository=scheduler_repository,
@@ -47,4 +54,9 @@ class Container(containers.Container):
         redis=redis,
         repository=server_log_repository,
         config=check_server_config
+    )
+    trader_activity = providers.Factory(TradersActivity,
+        repository=trader_repository, 
+        deal_repository=log_repository,
+        settings_repository=settings_repository
     )

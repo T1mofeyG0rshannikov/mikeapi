@@ -5,6 +5,7 @@ from typing import Annotated
 import pytz
 from fastapi import APIRouter, Depends, Response
 
+from src.repositories.ticker_repository import TickerRepository
 from src.db.models.models import UrlEnum
 from src.dependencies.dependencies import (
     get_app,
@@ -12,9 +13,10 @@ from src.dependencies.dependencies import (
     get_log_repository,
     get_ping_repository,
     get_server_status,
+    get_ticker_repository,
     get_trader_repository,
 )
-from src.entites.trade import TRADE_OPERATIONS
+from src.entites.deal import TRADE_OPERATIONS
 from src.entites.trader import TraderWatch
 from src.entites.vendor import Vendor
 from src.exceptions import APIServerError, InvalidCreateLogRequest
@@ -36,6 +38,7 @@ async def create_log(
     server_status: Annotated[UrlEnum, Depends(get_server_status)],
     trader_repository: Annotated[TraderRepository, Depends(get_trader_repository)],
     ping_repository: Annotated[PingRepository, Depends(get_ping_repository)],
+    ticker_repository: Annotated[TickerRepository, Depends(get_ticker_repository)],
     log_repository: Annotated[LogRepository, Depends(get_log_repository)],
 ) -> APIResponse:
     try:
@@ -59,9 +62,9 @@ async def create_log(
         
         try:
             username, operation, ticker_name, _, price, currency, _ = data.text.split()
-            ticker = await log_repository.get_ticker(slug=ticker_name)
+            ticker = await ticker_repository.get(slug=ticker_name)
             if not ticker:
-                ticker = await log_repository.create_ticker(slug=ticker_name, currency=currency)
+                ticker = await ticker_repository.create(slug=ticker_name, currency=currency)
 
             price = float(price)
             username = username[0:-1]

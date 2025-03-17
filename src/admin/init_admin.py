@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from src.admin.model_views.trader_statistics import TraderStatisticsAdmin
+from src.admin.model_views.failure_deal import FailureDealAdmin
 from src.admin.model_views.server_log import ServerLogAdmin
 from src.admin.model_views.device import VendorAdmin
 from src.dependencies.base_dependencies import get_jwt_processor, get_password_hasher
@@ -13,7 +15,6 @@ from src.admin.model_views.ping import PingAdmin
 from src.admin.model_views.ticker import TickerAdmin
 from src.admin.model_views.trade import LogAdmin
 from src.admin.model_views.trader import TraderAdmin
-from src.admin.model_views.unsuccess_log import UnsuccesslogAdmin
 from src.admin.views import (
     APIUrlsAdmin,
     LogActivityAdmin,
@@ -33,17 +34,18 @@ def init_admin(app: FastAPI):
     admin = CustomAdmin(
         app=app, engine=engine, authentication_backend=authentication_backend, templates_dir="src/admin/templates"
     )
-    admin.add_view(UserAdmin)
-    admin.add_view(VendorAdmin)
-    admin.add_view(APIUrlsAdmin)
+    admin.add_view(LogActivityAdmin)
     admin.add_view(LogAdmin)
     admin.add_view(TraderAdmin)
-    admin.add_view(LogActivityAdmin)
     admin.add_view(TickerAdmin)
-    admin.add_view(SettingsAdmin)
-    admin.add_view(PingAdmin)
-    admin.add_view(UnsuccesslogAdmin)
-    admin.add_view(ContactAdmin)
-    admin.add_view(SchedulerAdmin)
-    admin.add_view(AlertsAdmin)
     admin.add_view(ServerLogAdmin)
+    admin.add_view(FailureDealAdmin)
+    admin.add_view(PingAdmin)
+    admin.add_view(VendorAdmin)
+    admin.add_view(APIUrlsAdmin)
+    admin.add_view(SchedulerAdmin)
+    admin.add_view(ContactAdmin)
+    admin.add_view(SettingsAdmin)
+    admin.add_view(AlertsAdmin)
+    admin.add_view(UserAdmin)
+    admin.add_view(TraderStatisticsAdmin)

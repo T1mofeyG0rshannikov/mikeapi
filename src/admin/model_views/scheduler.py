@@ -6,8 +6,8 @@ from src.db.models.models import SchedulerRuleOrm
 class SchedulerAdmin(BaseModelView, model=SchedulerRuleOrm):
     column_list = [SchedulerRuleOrm.day_l, SchedulerRuleOrm.hour_l, SchedulerRuleOrm.interval1, SchedulerRuleOrm.interval2]
 
-    name = "Расписание"
-    name_plural = "Расписание"
+    name = "Расписание торгов"
+    name_plural = "Расписание торгов"
 
     form = SchedulerForm
     

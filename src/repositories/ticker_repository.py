@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 
-from src.db.models.models import LogOrm, TickerOrm, UnsuccessLog
+from src.db.models.models import LogOrm, TickerOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 
@@ -21,11 +21,6 @@ class TickerRepository(BaseRepository):
         await self.db.commit()
 
         return ticker
-
-    async def create_unsuccesslog(self, body: str) -> None:
-        log = UnsuccessLog(body=body)
-        self.db.add(log)
-        await self.db.commit()
         
     async def exists(self, created_at_l: datetime, created_at_r: datetime) -> bool:
         #exist = await self.db.execute(select(LogOrm))
@@ -35,3 +30,13 @@ class TickerRepository(BaseRepository):
     async def last(self):
         trade = await self.db.execute(select(LogOrm).order_by(LogOrm.id.desc()).limit(1))
         return trade.scalar()
+    
+    async def count(self, trader_id: int) -> int:
+        query = select(func.count(TickerOrm.id))
+        filters = and_()
+        if trader_id:
+            query = query.join(LogOrm)
+            filters &= and_(LogOrm.user_id==trader_id)
+
+        result = await self.db.execute(query.where(filters))
+        return result.scalar_one()

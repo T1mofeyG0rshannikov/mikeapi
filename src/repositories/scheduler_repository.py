@@ -14,7 +14,7 @@ class SchedulerRepository(BaseRepository):
 
     async def alerts(self) -> AlertsOrm:
         alerts = await self.db.execute(select(AlertsOrm))
-        return alerts.scalars().first()
+        return alerts.scalar()
     
     async def get_contacts(self) -> list[ContactOrm]:
         contacts = await self.db.execute(select(ContactOrm))

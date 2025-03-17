@@ -10,8 +10,8 @@ class VendorAdmin(BaseModelView, model=VendorOrm):
 
     form = VendorCreateForm
 
-    name = "Приложение"
-    name_plural = "Приложения"
+    name = "Устройство"
+    name_plural = "Устройства"
     
     def form_edit_query(self, request: Request) -> Select:
         return self._stmt_by_identifier(request.path_params["pk"])

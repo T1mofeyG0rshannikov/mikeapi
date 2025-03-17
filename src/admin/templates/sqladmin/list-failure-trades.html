@@ -6,7 +6,7 @@
       <h3 class="card-title">{{ model_view.name_plural }}</h3>
       <div class="ms-auto">
         <span class="last-seen">
-          {{ request.session.new_failure_trades }}
+          {{ request.session.get('new_failure_trades') }}
         </span>
         <style>
           .last-seen{

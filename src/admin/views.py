@@ -4,13 +4,12 @@ from sqladmin.helpers import slugify_class_name
 from sqlalchemy import delete
 from starlette.responses import RedirectResponse
 
-from src.admin.forms import UserCreateForm, VendorCreateForm
+from src.admin.forms import UserCreateForm
 from src.db.models.models import (
     APIURLSOrm,
     LogActivityOrm,
     SettingsOrm,
-    UserOrm,
-    VendorOrm,
+    UserOrm
 )
 
 
@@ -26,8 +25,8 @@ class UserAdmin(ModelView, model=UserOrm):
 class APIUrlsAdmin(ModelView, model=APIURLSOrm):
     column_list = [APIURLSOrm.main_url, APIURLSOrm.reverse_url]
 
-    name = "url адрес"
-    name_plural = "url адреса"
+    name = "API шлюз"
+    name_plural = "API шлюзы"
 
 
 class LogActivityAdmin(ModelView, model=LogActivityOrm):

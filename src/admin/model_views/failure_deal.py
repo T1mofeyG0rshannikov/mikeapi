@@ -9,11 +9,11 @@ from starlette.requests import Request
 from sqladmin.pagination import Pagination
 
 
-class UnsuccesslogAdmin(ModelView, model=UnsuccessLog):
+class FailureDealAdmin(ModelView, model=UnsuccessLog):
     column_list = [UnsuccessLog.id, UnsuccessLog.created_at, UnsuccessLog.body]
 
-    name = "Неудача"
-    name_plural = "Неудачи"
+    name = "Ошибки API"
+    name_plural = "Ошибки API"
 
     column_formatters = {
         UnsuccessLog.body: lambda m, a: Markup(f"<pre>{m.body}</pre>" if m.body else ""),
@@ -27,6 +27,9 @@ class UnsuccesslogAdmin(ModelView, model=UnsuccessLog):
     page_size = 100
     
     list_template = "sqladmin/list-failure-trades.html"
+    
+    marker = True
+    marker_key = 'new_failure_trades'
     
     async def list(self, request: Request) -> Pagination:
         pagination = await super().list(request)

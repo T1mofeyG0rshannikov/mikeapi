@@ -18,7 +18,7 @@ class AlertsAdmin(BaseModelView, model=AlertsOrm):
         AlertsOrm.second_ping_channel,
     ]
 
-    name = "Уведомления"
-    name_plural = "Уведомления"
+    name = "Мониторинг"
+    name_plural = "Мониторинг"
     
     form = AlertsForm
