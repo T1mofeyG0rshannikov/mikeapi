@@ -1,14 +1,17 @@
 from dependency_injector import containers, providers
+from src.repositories.user_repository import UserRepository
+from src.background_tasks.traders_statistics import CreateTraderStatistics, TraderStatistics
+from src.messaging.sms_sender.config import SMSAeroConfig
+from src.messaging.telegram_sender.sender import TelegramSender
+from src.messaging.sms_sender.sender import SMSSender
+from src.messaging.telegram_sender.config import TelegramSenderConfig
 from src.repositories.settings_repository import SettingsRepository
 from src.repositories.ticker_repository import TickerRepository
 from src.repositories.trader_repository import TraderRepository
-from src.background_tasks.traders_activity import TradersActivity
 from src.background_tasks.check_server import CheckServer
 from src.background_tasks.check_server_config import CheckServerConfig
 from src.alerts_service.config import AlertsServiceConfig
 from src.repositories.server_log_repositrory import ServerLogRepository
-from src.sms_sender.config import SMSAeroConfig
-from src.sms_sender.sender import SMSSender
 from src.repositories.ping_repository import PingRepository
 from src.repositories.scheduler_repository import SchedulerRepository
 from src.repositories.vendor_repository import VendorRepository
@@ -16,9 +19,6 @@ from src.repositories.log_repository import LogRepository
 from src.background_tasks.check_server_available import CheckServerActivity
 from src.db.database import get_db
 from src.dependencies.base_dependencies import get_redis
-
-from src.telegram_sender.config import TelegramSenderConfig
-from src.telegram_sender.sender import TelegramSender
 from src.alerts_service.service import AlertsService
 
 
@@ -28,6 +28,7 @@ class Container(containers.Container):
     vendor_repository = providers.Factory(VendorRepository, db=db)
     ticker_repository = providers.Factory(TickerRepository, db=db)
     trader_repository = providers.Factory(TraderRepository, db=db)
+    user_repository = providers.Factory(UserRepository, db=db)
     telegram_config = providers.Singleton(TelegramSenderConfig)
     telegram_sender = providers.Singleton(TelegramSender, config=telegram_config)
     sms_config = providers.Singleton(SMSAeroConfig)
@@ -55,8 +56,11 @@ class Container(containers.Container):
         repository=server_log_repository,
         config=check_server_config
     )
-    trader_activity = providers.Factory(TradersActivity,
+    create_trader_statistics = providers.Factory(CreateTraderStatistics,
         repository=trader_repository, 
         deal_repository=log_repository,
-        settings_repository=settings_repository
+    )
+    trader_statistics = providers.Factory(TraderStatistics,
+        settings_repository=settings_repository,
+        create_statistics=create_trader_statistics    
     )

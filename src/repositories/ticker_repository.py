@@ -21,12 +21,7 @@ class TickerRepository(BaseRepository):
         await self.db.commit()
 
         return ticker
-        
-    async def exists(self, created_at_l: datetime, created_at_r: datetime) -> bool:
-        #exist = await self.db.execute(select(LogOrm))
-        exist = await self.db.execute(select(LogOrm).where(and_(LogOrm.created_at<=created_at_r, LogOrm.created_at>=created_at_l)))
-        return not (exist.scalars().first() is None)
-    
+ 
     async def last(self):
         trade = await self.db.execute(select(LogOrm).order_by(LogOrm.id.desc()).limit(1))
         return trade.scalar()

@@ -14,6 +14,7 @@ from sqlalchemy import (
     case,
     func,
     select,
+    text
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -22,7 +23,7 @@ from sqlalchemy.types import TIMESTAMP
 
 from src.db.database import Model, Session
 from src.entites.ticker import TICKER_TYPES
-from src.entites.trader import TraderStatus, TraderWatch
+from src.entites.trader import StatisticPeriod, StatisticPeriodEnum, TraderStatus, TraderWatch
 from sqlalchemy import Index
 
 
@@ -167,7 +168,7 @@ class TickerOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
     slug = Column(String, index=True)
     name = Column(String, nullable=True)
-    lot = Column(Integer, default=0)
+    lot = Column(Integer, server_default=text("1"))
     type = Column(String, nullable=True)
     currency = Column(String)
 
@@ -323,6 +324,8 @@ class TraderStatisticOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
 
     date = Column(Date)
+    date_value = Column(String)
+    period = Column(String)
     
     trader_id = Column(Integer, ForeignKey("traders.id"))
     trader = relationship(TraderOrm, back_populates="statistics")
@@ -340,3 +343,9 @@ class TraderStatisticOrm(Model):
     yield_ = Column(Float)
     gain = Column(Float)
     tickers = Column(Integer)
+    
+    periods = StatisticPeriodEnum.list
+
+    @property
+    def period_obj(self) -> StatisticPeriod:
+        return StatisticPeriod(self.period)

@@ -5,20 +5,6 @@
     <div class="card-header">
       <h3 class="card-title">{{ model_view.name_plural }}</h3>
       <div class="ms-auto">
-        <span class="last-seen">
-          {{ request.session.new_errors }}
-        </span>
-        <style>
-          .last-seen{
-            background-color: rgb(255, 92, 92);
-            padding: 5px 10px;
-            width: 40px;
-            border-radius: 5px;
-            text-align: center;
-            color: white;
-          }
-
-        </style>
         {% if model_view.can_export %}
         {% if model_view.export_types | length > 1 %}
         <div class="ms-3 d-inline-block dropdown">
@@ -55,6 +41,7 @@
     <div class="card-body border-bottom py-3">
       <div class="d-flex justify-content-between">
         <div class="dropdown col-4">
+          <div style="display: flex; gap: 15px; align-items: center;">
           <button {% if not model_view.can_delete and not model_view._custom_actions_in_list %} disabled {% endif %}
             class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false">
@@ -82,6 +69,37 @@
             {% endfor %}
           </div>
           {% endif %}
+
+          <div style="min-width: 130px;">
+            <select onchange="selectPeriod(event)">
+              {% for period in model_view.model.periods %}
+                <option value="{{ period }}" {% if request.query_params.get("period") == period %}selected{% endif %}>{{ period }}</option>
+              {% endfor %}
+              </select>
+          </div>
+          </div>
+
+          <script>
+
+            function addParams(list){
+              const currentUrl = new URL(window.location.href);
+              for (let param of list){
+                const [key, value] = param;
+                currentUrl.searchParams.set(key, value);
+              }
+              window.location.href = currentUrl.toString();
+            }
+            function selectPeriod(event){
+              event.preventDefault();
+              console.log(event.target.value)
+              addParam("period", event.target.value);
+            }
+            function addParam(key, value){
+              const currentUrl = new URL(window.location.href);
+              currentUrl.searchParams.set(key, value);
+              window.location.href = currentUrl.toString();
+            }
+          </script>
         </div>
         {% if model_view.column_searchable_list %}
         <div class="col-md-4 text-muted">
@@ -103,7 +121,6 @@
           <tr>
             <th class="w-1"><input class="form-check-input m-0 align-middle" type="checkbox" aria-label="Select all"
                 id="select-all"></th>
-            <th class="w-1"></th>
             {% for name in model_view._list_prop_names %}
             {% set label = model_view._column_labels.get(name, name) %}
             <th>
@@ -121,7 +138,9 @@
               {{ label }}
               {% endif %}
             </th>
+
             {% endfor %}
+            <th class="w-1"></th>
           </tr>
         </thead>
         <tbody>
@@ -130,27 +149,6 @@
             <td>
               <input type="hidden" value="{{ get_object_identifier(row) }}">
               <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
-            </td>
-            <td class="text-end">
-              {% if model_view.can_view_details %}
-              <a href="{{ model_view._build_url_for('admin:details', request, row) }}" data-bs-toggle="tooltip"
-                data-bs-placement="top" title="View">
-                <span class="me-1"><i class="fa-solid fa-eye"></i></span>
-              </a>
-              {% endif %}
-              {% if model_view.can_edit %}
-              <a href="{{ model_view._build_url_for('admin:edit', request, row) }}" data-bs-toggle="tooltip"
-                data-bs-placement="top" title="Edit">
-                <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
-              </a>
-              {% endif %}
-              {% if model_view.can_delete %}
-              <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(row) }}"
-                data-url="{{ model_view._url_for_delete(request, row) }}" data-bs-toggle="modal"
-                data-bs-target="#modal-delete" title="Delete">
-                <span class="me-1"><i class="fa-solid fa-trash"></i></span>
-              </a>
-              {% endif %}
             </td>
             {% for name in model_view._list_prop_names %}
             {% set value, formatted_value = model_view.get_list_value(row, name) %}
@@ -168,6 +166,28 @@
             <td>{{ formatted_value }}</td>
             {% endif %}
             {% endfor %}
+
+            <td class="text-end">
+            {% if model_view.can_view_details %}
+            <a href="{{ model_view._build_url_for('admin:details', request, row) }}" data-bs-toggle="tooltip"
+                data-bs-placement="top" title="View">
+                <span class="me-1"><i class="fa-solid fa-eye"></i></span>
+            </a>
+            {% endif %}
+            {% if model_view.can_edit %}
+            <a href="{{ model_view._build_url_for('admin:edit', request, row) }}" data-bs-toggle="tooltip"
+                data-bs-placement="top" title="Edit">
+                <span class="me-1"><i class="fa-solid fa-pen-to-square"></i></span>
+            </a>
+            {% endif %}
+            {% if model_view.can_delete %}
+            <a href="#" data-name="{{ model_view.name }}" data-pk="{{ get_object_identifier(row) }}"
+                data-url="{{ model_view._url_for_delete(request, row) }}" data-bs-toggle="modal"
+                data-bs-target="#modal-delete" title="Delete">
+                <span class="me-1"><i class="fa-solid fa-trash"></i></span>
+            </a>
+            {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>

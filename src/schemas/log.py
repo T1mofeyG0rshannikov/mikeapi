@@ -20,4 +20,3 @@ class CreateLogRequest(BaseModel):
             return value
         except ValueError:
             raise InvalidCreateLogRequest("Invalid time format. Use DD:MM:YYYY.hh:mm:ss")
-            #raise ValueError("Invalid time format. Use DD:MM:YYYY.hh:mm:ss")

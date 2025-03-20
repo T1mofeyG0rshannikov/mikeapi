@@ -1,8 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from src.db.database import get_db
-from src.dependencies.dependencies import get_log_repository
+from src.dependencies.container import Container
 from src.exceptions import (
     APIServerError,
     InvalidAuthTokenError,
@@ -13,11 +12,10 @@ from src.exceptions import (
 from src.usecases.create_failure_log import CreateFailureLog
 
 
-async def create_failure_log(request: Request):
-    async for db in get_db():
-        log_repository = get_log_repository(db)
-        usecase = CreateFailureLog(log_repository)
-        await usecase(request)
+async def create_failure_log(request: Request) -> None:
+    log_repository = await Container.log_repository()
+    usecase = CreateFailureLog(log_repository)
+    await usecase(request)
 
 async def server_error_exc_handler(request: Request, exc: APIServerError) -> JSONResponse:
     await create_failure_log(request)

@@ -14,6 +14,4 @@ class SchedulerAdmin(BaseModelView, model=SchedulerRuleOrm):
     column_formatters = {
         SchedulerRuleOrm.day_l: lambda rule, _: f"{rule.day_l}-{rule.day_r}",
         SchedulerRuleOrm.hour_l: lambda rule, _: f"{rule.hour_l}:{str(rule.minute_l).zfill(2)}-{rule.hour_r}:{str(rule.minute_r).zfill(2)}",
-       # SchedulerRuleOrm.interval1: lambda rule, _: f"{rule.interval1}({rule.interval1_channel})",
-       # SchedulerRuleOrm.interval2: lambda rule, _: f"{rule.interval2}({rule.interval2_channel})",
     }

@@ -1,7 +1,7 @@
 import pytz
 from markupsafe import Markup
-from sqladmin import ModelView
 
+from src.admin.model_views.base import BaseModelView
 from src.dependencies.container import Container
 from src.db.models.models import UnsuccessLog
 
@@ -9,7 +9,7 @@ from starlette.requests import Request
 from sqladmin.pagination import Pagination
 
 
-class FailureDealAdmin(ModelView, model=UnsuccessLog):
+class FailureDealAdmin(BaseModelView, model=UnsuccessLog):
     column_list = [UnsuccessLog.id, UnsuccessLog.created_at, UnsuccessLog.body]
 
     name = "Ошибки API"
@@ -25,9 +25,7 @@ class FailureDealAdmin(ModelView, model=UnsuccessLog):
     column_default_sort = ("id", "desc")
 
     page_size = 100
-    
-    list_template = "sqladmin/list-failure-trades.html"
-    
+      
     marker = True
     marker_key = 'new_failure_trades'
     

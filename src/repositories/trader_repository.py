@@ -1,8 +1,9 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, select, delete
 
-from src.entites.trader import TraderWatch
+from src.entites.trader import StatisticPeriodEnum, TraderWatch
 from src.db.models.models import TraderOrm, TraderStatisticOrm
 from src.repositories.base_reposiotory import BaseRepository
+from datetime import datetime
 
 
 class TraderRepository(BaseRepository):
@@ -39,7 +40,9 @@ class TraderRepository(BaseRepository):
     
     async def create_statistics(
         self,
-        date,
+        date: datetime,
+        period: StatisticPeriodEnum,
+        date_value: str,
         trader_id: int,
         cash_balance: float,
         stock_balance: float,
@@ -53,6 +56,8 @@ class TraderRepository(BaseRepository):
     ) -> None:
         statistics = TraderStatisticOrm(
             date=date,
+            date_value=date_value,
+            period=period,
             trader_id=trader_id,
             cash_balance=cash_balance,
             stock_balance=stock_balance,
@@ -66,3 +71,6 @@ class TraderRepository(BaseRepository):
         )
         self.db.add(statistics)
         await self.db.commit()
+        
+    async def delete_statistics(self, period: StatisticPeriodEnum) -> None:
+        await self.db.execute(delete(TraderStatisticOrm).where(TraderStatisticOrm.period==period))

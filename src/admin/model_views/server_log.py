@@ -1,12 +1,11 @@
-from sqladmin import ModelView
-
+from src.admin.model_views.base import BaseModelView
 from src.db.models.models import ServerUnavailableLogOrm
 from starlette.requests import Request
 from sqladmin.pagination import Pagination
 from src.dependencies.container import Container
 
 
-class ServerLogAdmin(ModelView, model=ServerUnavailableLogOrm):
+class ServerLogAdmin(BaseModelView, model=ServerUnavailableLogOrm):
     column_list = [ServerUnavailableLogOrm.id, ServerUnavailableLogOrm.log]
 
     name = "Системные сбои"

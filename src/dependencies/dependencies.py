@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.db.models.models import UrlEnum
 from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ticker_repository import TickerRepository
 from src.repositories.scheduler_repository import SchedulerRepository
@@ -49,7 +50,7 @@ async def get_is_main_server(
     api_url: str,
     vendor_repository: Annotated[VendorRepository, Depends(get_vendor_repository)],
 ) -> bool:
-    vendor_urls = await vendor_repository.get_vendor_urls()
+    vendor_urls = await vendor_repository.get_api_urls()
     if api_url == vendor_urls.main_url:
         return True
     elif api_url == vendor_urls.reverse_url:
@@ -61,8 +62,8 @@ async def get_is_main_server(
 async def get_server_status(
     is_main_server: Annotated[bool, Depends(get_is_main_server)],
     vendor_repository: Annotated[VendorRepository, Depends(get_vendor_repository)],
-):
-    vendor_urls = await vendor_repository.get_vendor_urls()
+) -> UrlEnum:
+    vendor_urls = await vendor_repository.get_api_urls()
     if is_main_server:
         return vendor_urls.main_url_status
 
@@ -82,7 +83,3 @@ async def get_app(
         raise InvalidAuthTokenError(f"ошибка аутентификации в приложении '{data.app_id}' - неверный токен")
 
     return vendor
-
-
-def get_scheduler_repository(db = Depends(get_db)):
-    return SchedulerRepository(db)

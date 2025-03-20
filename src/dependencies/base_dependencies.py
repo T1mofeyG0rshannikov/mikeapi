@@ -1,12 +1,12 @@
 from functools import lru_cache
 
+from src.admin.config import AdminConfig
 from src.background_tasks.check_server_config import CheckServerConfig
 from redis import Redis
 from src.redis.conf import RedisConfig
 from src.auth.jwt_config import JwtConfig
 from src.auth.jwt_processor import JwtProcessor
 from src.password_hasher import PasswordHasher
-
 
 
 @lru_cache
@@ -34,3 +34,8 @@ def get_redis(conf: RedisConfig = get_redis_config()) -> Redis:
 @lru_cache
 def get_check_server_config() -> CheckServerConfig:
     return CheckServerConfig()
+
+
+@lru_cache
+def get_admin_config() -> AdminConfig:
+    return AdminConfig()

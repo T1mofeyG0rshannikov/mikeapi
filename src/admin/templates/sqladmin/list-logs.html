@@ -145,16 +145,6 @@
         <tbody>
           {% for row in pagination.rows %}
           <tr {% if row.delayed %}style="color: #990000;"{% endif %}>
-            <!--<style>
-                {% if row.delayed %}
-                tr td *{
-                  color: #990000;
-                }
-                tr td{
-                  color: #990000;
-                }
-                {% endif %}
-            </style>-->
             <td>
               <input type="hidden" value="{{ get_object_identifier(row) }}">
               <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">

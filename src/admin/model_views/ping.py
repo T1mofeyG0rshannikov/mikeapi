@@ -1,10 +1,9 @@
 import pytz
-from sqladmin import ModelView
-
+from src.admin.model_views.base import BaseModelView
 from src.db.models.models import PingOrm
 
 
-class PingAdmin(ModelView, model=PingOrm):
+class PingAdmin(BaseModelView, model=PingOrm):
     column_list = [PingOrm.id, PingOrm.app, PingOrm.created_at]
 
     name = "Пинг"

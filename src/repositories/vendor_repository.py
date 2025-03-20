@@ -10,15 +10,15 @@ class VendorRepository(BaseRepository):
     async def get(self, id: str) -> Vendor:
         query = select(VendorOrm).where(VendorOrm.app_id == id)
         result = await self.db.execute(query)
-        vendor_db = result.scalars().first()
+        vendor_db = result.scalar()
         return from_orm_to_vendor(vendor_db) if vendor_db else None
 
-    async def get_vendor_urls(self) -> APIURLSOrm:
+    async def get_api_urls(self) -> APIURLSOrm:
         query = select(APIURLSOrm)
         result = await self.db.execute(query)
-        return result.scalars().first()
+        return result.scalar()
     
     async def first(self) -> VendorOrm:
-        query = select(VendorOrm)
+        query = select(VendorOrm).limit(1)
         result = await self.db.execute(query)
-        return result.scalars().first()
+        return result.scalar()

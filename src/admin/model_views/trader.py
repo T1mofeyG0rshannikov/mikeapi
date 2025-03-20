@@ -80,7 +80,7 @@ class TraderAdmin(BaseModelView, model=TraderOrm):
     async def get_model_objects(self, request: Request, limit: int | None = 0) -> list[Any]:
         async with self.session_maker(expire_on_commit=False) as session:
             buffer = await session.execute(select(TradersBuffer))
-            buffer = buffer.scalars().first()
+            buffer = buffer.scalar()
             if buffer:
                 if buffer.usernames:
                     rows = []

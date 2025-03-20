@@ -1,4 +1,4 @@
-from src.telegram_sender.config import TelegramSenderConfig
+from src.messaging.telegram_sender.config import TelegramSenderConfig
 from aiogram import Bot
 
 

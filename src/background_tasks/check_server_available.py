@@ -1,16 +1,15 @@
 from pytz import timezone
+from src.messaging.sms_sender.sender import SMSSender
+from src.messaging.telegram_sender.sender import TelegramSender
 from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ping_repository import PingRepository
 from src.alerts_service.service import AlertsService
-from src.sms_sender.sender import SMSSender
 from src.entites.contacts import ContactChannel
 from src.repositories.vendor_repository import VendorRepository
 from src.entites.alert import AlertChannels
 from src.repositories.log_repository import LogRepository
 from src.repositories.scheduler_repository import SchedulerRepository
 from datetime import datetime
-
-from src.telegram_sender.sender import TelegramSender
 
 
 class CheckServerActivity:
