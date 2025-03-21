@@ -330,19 +330,28 @@ class TraderStatisticOrm(Model):
     trader_id = Column(Integer, ForeignKey("traders.id"))
     trader = relationship(TraderOrm, back_populates="statistics")
     
-    cash_balance = Column(Float) 
+    cash_balance = Column(Float)
+    cash_balance_degrees = Column(Float, nullable=True)
 
     stock_balance = Column(Float)
+    stock_balance_degrees = Column(Float, nullable=True)
     active_lots = Column(Integer)
+    active_lots_degrees = Column(Integer, nullable=True)
 
     deals = Column(Integer)
+    deals_degrees = Column(Integer, nullable=True)
     
     trade_volume = Column(Float)
+    trade_volume_degrees = Column(Float, nullable=True)
     income = Column(Float)
+    income_degrees = Column(Float, nullable=True)
 
     yield_ = Column(Float)
+    yield_degrees = Column(Float, nullable=True)
     gain = Column(Float)
+    gain_degrees = Column(Float, nullable=True)
     tickers = Column(Integer)
+    tickers_degrees = Column(Integer, nullable=True)
     
     periods = StatisticPeriodEnum.list
 

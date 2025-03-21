@@ -16,6 +16,13 @@ from sqlalchemy.orm import selectinload
 from starlette.routing import URLPath
 
 
+def render_degrees(value: int | None) -> str:
+    if value is None:
+        return ""
+    
+    return f'''<span style="color: {"rgb(100, 255, 100)" if value > 0 else "rgb(255, 100, 100)"}">({value if value < 0 else f"+{value}"})</span>'''
+
+
 class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
     column_list = [
         TraderStatisticOrm.date_value, 
@@ -40,14 +47,14 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
         TraderStatisticOrm.trader: lambda a, _: Markup(
             f"""<a href="{URLPath(f'''/admin/trader-statistic-orm/list?trader_id={a.trader_id}''')}">{a.trader}</a>"""
         ),
-        TraderStatisticOrm.gain: lambda a, _: f"{round(a.gain, 2)} %",
-        TraderStatisticOrm.trade_volume: lambda a, _: f"{round(a.trade_volume)} ₽",
-        TraderStatisticOrm.stock_balance: lambda a, _: f"{round(a.stock_balance)} ₽",
-        TraderStatisticOrm.cash_balance: lambda a, _: f"{round(a.cash_balance)} ₽",
-        TraderStatisticOrm.income: lambda a, _: f"{round(a.income)} ₽",
-        TraderStatisticOrm.yield_: lambda a, _: round(a.yield_, 2),
+        TraderStatisticOrm.gain: lambda a, _: Markup(f"{round(a.gain, 2)} % {render_degrees(a.gain_degrees)}"),
+        TraderStatisticOrm.trade_volume: lambda a, _: Markup(f"{round(a.trade_volume)} ₽ {render_degrees(a.trade_volume_degrees)}"),
+        TraderStatisticOrm.stock_balance: lambda a, _: Markup(f"{round(a.stock_balance)} ₽ {render_degrees(a.stock_balance_degrees)}"),
+        TraderStatisticOrm.cash_balance: lambda a, _: Markup(f"{round(a.cash_balance)} ₽ {render_degrees(a.cash_balance_degrees)}"),
+        TraderStatisticOrm.income: lambda a, _: Markup(f"{round(a.income)} ₽ {render_degrees(a.income_degrees)}"),
+        TraderStatisticOrm.yield_: lambda a, _: Markup(f"{round(a.yield_, 2)} {render_degrees(a.yield_degrees)}"),
         TraderStatisticOrm.deals: lambda a, _: Markup(
-            f"""<a href="{URLPath(f'''/admin/log-orm/list?trader_id={a.trader_id}&start_date={(a.date-timedelta(a.period_obj.days)).strftime("%d.%m.%Y")}&end_date={a.date.strftime("%d.%m.%Y")}''')}">{a.deals}({a.degrees_deals if hasattr(a, "degrees_deals") else ""})</a>"""
+            f"""<a href="{URLPath(f'''/admin/log-orm/list?trader_id={a.trader_id}&start_date={(a.date-timedelta(a.period_obj.days)).strftime("%d.%m.%Y")}&end_date={a.date.strftime("%d.%m.%Y")}''')}">{a.deals} {render_degrees(a.deals_degrees)}</a>"""
         ),
     }
 
@@ -99,18 +106,6 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
-        #able_types = [int, float]
-        #print(rows[0].degrees_deals)
-        #for i in range(1, len(rows)):
-        #    r=rows[i]
-        #    l_r = rows[i - 1]
-        #    for c in self.model.__table__.columns:
-        #        print(c)
-        #        print(getattr(r, str(c).split(".")[1]))
-        #        print(type(getattr(r, str(c).split(".")[1])))
-        #        print(type(getattr(r, str(c).split(".")[1])) in able_types)
-        #        if type(getattr(r, str(c).split(".")[1])) in able_types:
-        #            setattr(rows[i], f'''degrees_{str(c).split(".")[1]}''', getattr(r, str(c).split(".")[1]) - getattr(l_r, str(c).split(".")[1]))
 
         pagination = Pagination(
             rows=rows,
@@ -125,13 +120,10 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
         able_types = [int, float]
         try:
             previous = self.previous
-        except:
+        except AttributeError:
             self.previous = model
             return super().get_list_value(model, column)
-            
-        for c in self.model.__table__.columns:
-            if type(getattr(model, str(c).split(".")[1])) in able_types:
-                setattr(model, f'''degrees_{str(c).split(".")[1]}''', getattr(model, str(c).split(".")[1]) - getattr(previous, str(c).split(".")[1]))
 
-        self.previous = model 
+        if self.previous != model:
+            self.previous = model 
         return super().get_list_value(model, column)

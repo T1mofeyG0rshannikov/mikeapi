@@ -38,6 +38,10 @@ class TraderRepository(BaseRepository):
         traders = await self.db.execute(select(TraderOrm).where(TraderOrm.watch==watch))
         return traders.scalars().all()
     
+    async def last_statistics(self, trader_id: int, period: str) -> TraderStatisticOrm:
+        last = await self.db.execute(select(TraderStatisticOrm).where(TraderStatisticOrm.trader_id==trader_id, TraderStatisticOrm.period==period).order_by(TraderStatisticOrm.id.desc()).limit(1))
+        return last.scalar()
+    
     async def create_statistics(
         self,
         date: datetime,
@@ -52,25 +56,44 @@ class TraderRepository(BaseRepository):
         income: float,
         yield_: float,
         gain: float,
-        tickers: int
-    ) -> None:
+        tickers: int,
+        deals_degrees: int = None,
+        active_lots_degrees: int = None,
+        stock_balance_degrees: float = None,
+        cash_balance_degrees: float = None,
+        trade_volume_degrees: float = None,
+        income_degrees: float = None,
+        yield_degrees: float = None,
+        gain_degrees: float = None,
+        tickers_degrees: int = None
+    ) -> TraderStatisticOrm:
         statistics = TraderStatisticOrm(
             date=date,
             date_value=date_value,
             period=period,
             trader_id=trader_id,
             cash_balance=cash_balance,
+            cash_balance_degrees=cash_balance_degrees,
             stock_balance=stock_balance,
+            stock_balance_degrees=stock_balance_degrees,
             active_lots=active_lots,
+            active_lots_degrees=active_lots_degrees,
             deals=deals,  
+            deals_degrees=deals_degrees,  
             trade_volume=trade_volume,
+            trade_volume_degrees=trade_volume_degrees,
             income=income,
+            income_degrees=income_degrees,
             yield_=yield_,
+            yield_degrees=yield_degrees,
             gain=gain,
-            tickers=tickers
+            gain_degrees=gain_degrees,
+            tickers=tickers,
+            tickers_degrees=tickers_degrees
         )
         self.db.add(statistics)
         await self.db.commit()
+        return statistics
         
     async def filter_by_usernames(self, usernames: list[str]) -> list[TraderOrm]:
         traders = []
