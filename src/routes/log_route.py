@@ -18,7 +18,7 @@ from src.dependencies.dependencies import (
 )
 from src.entites.deal import TRADE_OPERATIONS
 from src.entites.trader import TraderWatch
-from src.entites.vendor import Vendor
+from src.entites.vendor import Device
 from src.exceptions import APIServerError, InvalidCreateLogRequest
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.log_repository import LogRepository
@@ -32,7 +32,7 @@ router = APIRouter(prefix="", tags=["logs"])
 
 @router.post("/{api_url}", response_model=APIResponse, tags=["logs"])
 async def create_log(
-    vendor: Annotated[Vendor, Depends(get_app)],
+    vendor: Annotated[Device, Depends(get_app)],
     data: CreateLogRequest,
     is_main_server: Annotated[bool, Depends(get_is_main_server)],
     server_status: Annotated[UrlEnum, Depends(get_server_status)],

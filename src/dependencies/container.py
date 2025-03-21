@@ -20,6 +20,8 @@ from src.background_tasks.check_server_available import CheckServerActivity
 from src.db.database import get_db
 from src.dependencies.base_dependencies import get_redis
 from src.alerts_service.service import AlertsService
+from src.usecases.create_usernames import AddUsernames
+from src.usecases.create_traders.create_traders import CreateTraders
 
 
 class Container(containers.Container):
@@ -63,4 +65,11 @@ class Container(containers.Container):
     trader_statistics = providers.Factory(TraderStatistics,
         settings_repository=settings_repository,
         create_statistics=create_trader_statistics    
+    )
+    add_usernames = providers.Factory(AddUsernames,
+        repository=trader_repository, 
+        vendor_repository=vendor_repository
+    )
+    create_traders = providers.Factory(CreateTraders,
+        traders_repository=trader_repository
     )

@@ -47,7 +47,7 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
         TraderStatisticOrm.income: lambda a, _: f"{round(a.income)} ₽",
         TraderStatisticOrm.yield_: lambda a, _: round(a.yield_, 2),
         TraderStatisticOrm.deals: lambda a, _: Markup(
-            f"""<a href="{URLPath(f'''/admin/log-orm/list?trader_id={a.trader_id}&start_date={(a.date-timedelta(a.period_obj.days)).strftime("%d.%m.%Y")}&end_date={a.date.strftime("%d.%m.%Y")}''')}">{a.deals}({a.degrees_deals})</a>"""
+            f"""<a href="{URLPath(f'''/admin/log-orm/list?trader_id={a.trader_id}&start_date={(a.date-timedelta(a.period_obj.days)).strftime("%d.%m.%Y")}&end_date={a.date.strftime("%d.%m.%Y")}''')}">{a.deals}({a.degrees_deals if hasattr(a, "degrees_deals") else ""})</a>"""
         ),
     }
 
@@ -122,18 +122,16 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
         return pagination
     
     def get_list_value(self, model, column):
-        """
         able_types = [int, float]
-        model.degrees_deals=0
-        '''for i in range(1, len(rows)):
-            r=rows[i]
-            l_r = rows[i - 1]
-            for c in self.model.__table__.columns:
-                print(c)
-                print(getattr(r, str(c).split(".")[1]))
-                print(type(getattr(r, str(c).split(".")[1])))
-                print(type(getattr(r, str(c).split(".")[1])) in able_types)
-                if type(getattr(r, str(c).split(".")[1])) in able_types:
-                    setattr(rows[i], f'''degrees_{str(c).split(".")[1]}''', getattr(r, str(c).split(".")[1]) - getattr(l_r, str(c).split(".")[1]))
-        '''"""
-        return super().get_list_value(model, column)  # Важно вызвать super()
+        try:
+            previous = self.previous
+        except:
+            self.previous = model
+            return super().get_list_value(model, column)
+            
+        for c in self.model.__table__.columns:
+            if type(getattr(model, str(c).split(".")[1])) in able_types:
+                setattr(model, f'''degrees_{str(c).split(".")[1]}''', getattr(model, str(c).split(".")[1]) - getattr(previous, str(c).split(".")[1]))
+
+        self.previous = model 
+        return super().get_list_value(model, column)

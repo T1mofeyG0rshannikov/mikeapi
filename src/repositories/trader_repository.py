@@ -72,5 +72,17 @@ class TraderRepository(BaseRepository):
         self.db.add(statistics)
         await self.db.commit()
         
+    async def filter_by_usernames(self, usernames: list[str]) -> list[TraderOrm]:
+        traders = []
+        for i in range(0, len(usernames), 5000):
+            result = await self.db.execute(select(TraderOrm).where(TraderOrm.username.in_(usernames[i : i + 5000])))
+            traders.extend(result.scalars().all())
+        
+        return traders
+    
+    async def get_usernames(self) ->list[str]:
+        usernames = await self.db.execute(select(TraderOrm.username))
+        return usernames.scalars().all()
+        
     async def delete_statistics(self, period: StatisticPeriodEnum) -> None:
         await self.db.execute(delete(TraderStatisticOrm).where(TraderStatisticOrm.period==period))

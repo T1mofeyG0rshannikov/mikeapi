@@ -6,9 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.models.models import UrlEnum
 from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ticker_repository import TickerRepository
-from src.repositories.scheduler_repository import SchedulerRepository
 from src.db.database import get_db
-from src.entites.vendor import Vendor
+from src.entites.vendor import Device
 from src.exceptions import InvalidAuthTokenError, UrlNotFound, VendorNotFoundError
 from src.repositories.log_repository import LogRepository
 from src.repositories.ping_repository import PingRepository
@@ -74,7 +73,7 @@ async def get_server_status(
 async def get_app(
     data: AppRequest,
     vendor_repository: Annotated[VendorRepository, Depends(get_vendor_repository)],
-) -> Vendor:
+) -> Device:
     vendor = await vendor_repository.get(data.app_id)
     if not vendor:
         raise VendorNotFoundError(f"нет приложения с id '{data.app_id}'")
