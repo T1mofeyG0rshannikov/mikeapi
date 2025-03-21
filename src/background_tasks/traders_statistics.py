@@ -34,9 +34,12 @@ class CreateTraderStatistics:
             last_statistics = await self.repository.last_statistics(trader_id=trader.id, period=period.view)
             all_deals = await self.deal_repository.filter(trader_id=trader.id, start_time=start_date)
             for i in range(0, days_count, period.days):
-                timezone = pytz.timezone("Europe/Moscow")
-    
+                timezone = pytz.UTC
+
                 aware_end_time = timezone.localize(today - timedelta(days=i))
+                if i == 0:
+                    print(today)
+                    print(aware_end_time)
                 aware_start_time = timezone.localize(today - timedelta(days=i+period.days))
                 deals = [deal for deal in all_deals if aware_start_time <= deal.created_at <= aware_end_time ]
                 cash_balance = 0
@@ -91,9 +94,11 @@ class CreateTraderStatistics:
                 tickers_count = len(active_lots)
                 gain = profitable_deals / (profitable_deals + unprofitable_deals) if (profitable_deals + unprofitable_deals) != 0 else 0
 
-                date_value = period.date_value(today)
+                date_value = period.date_value(aware_end_time)
                 if last_statistics:
                     statistics = await self.repository.create_statistics(
+                        start_date=aware_start_time,
+                        end_date=aware_end_time,
                         date=today,
                         period=period.view,
                         date_value=date_value,
@@ -119,6 +124,8 @@ class CreateTraderStatistics:
                     )
                 else:
                     statistics = await self.repository.create_statistics(
+                        start_date=aware_start_time,
+                        end_date=aware_end_time,
                         date=today,
                         period=period.view,
                         date_value=date_value,

@@ -4,7 +4,6 @@ from markupsafe import Markup
 from fastapi.requests import Request
 
 from src.admin.model_views.base import BaseModelView
-from datetime import timedelta
 from sqlalchemy import (
     and_,
     select,
@@ -16,11 +15,24 @@ from sqlalchemy.orm import selectinload
 from starlette.routing import URLPath
 
 
+DEGREES_COLORS = {
+    "more": "(20, 215, 20)",
+    "less": "(255, 100, 100)"
+}
+
 def render_degrees(value: int | None) -> str:
     if value is None:
         return ""
     
-    return f'''<span style="color: {"rgb(100, 255, 100)" if value > 0 else "rgb(255, 100, 100)"}">({value if value < 0 else f"+{value}"})</span>'''
+    if value == 0:
+        return ""
+    
+    if value == int(value):
+        value = int(value)
+    else:
+        value = round(value, 2)
+
+    return f'''<span style="color: rgb{DEGREES_COLORS["more" if value > 0 else "less"]}">({value if value < 0 else f"+{value}"})</span>'''
 
 
 class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
@@ -54,7 +66,7 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
         TraderStatisticOrm.income: lambda a, _: Markup(f"{round(a.income)} ₽ {render_degrees(a.income_degrees)}"),
         TraderStatisticOrm.yield_: lambda a, _: Markup(f"{round(a.yield_, 2)} {render_degrees(a.yield_degrees)}"),
         TraderStatisticOrm.deals: lambda a, _: Markup(
-            f"""<a href="{URLPath(f'''/admin/log-orm/list?trader_id={a.trader_id}&start_date={(a.date-timedelta(a.period_obj.days)).strftime("%d.%m.%Y")}&end_date={a.date.strftime("%d.%m.%Y")}''')}">{a.deals} {render_degrees(a.deals_degrees)}</a>"""
+            f"""<a href="{URLPath(f'''/admin/log-orm/list?trader_id={a.trader_id}&start_date={a.start_date.strftime("%d.%m.%Y")}&end_date={a.end_date.strftime("%d.%m.%Y")}''')}">{a.deals} {render_degrees(a.deals_degrees)}</a>"""
         ),
     }
 

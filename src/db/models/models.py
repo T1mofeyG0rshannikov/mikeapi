@@ -324,6 +324,10 @@ class TraderStatisticOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
 
     date = Column(Date)
+
+    start_date = Column(Date)
+    end_date = Column(Date)
+
     date_value = Column(String)
     period = Column(String)
     

@@ -45,6 +45,8 @@ class TraderRepository(BaseRepository):
     async def create_statistics(
         self,
         date: datetime,
+        end_date: datetime,
+        start_date: datetime,
         period: StatisticPeriodEnum,
         date_value: str,
         trader_id: int,
@@ -69,6 +71,8 @@ class TraderRepository(BaseRepository):
     ) -> TraderStatisticOrm:
         statistics = TraderStatisticOrm(
             date=date,
+            start_date=start_date,
+            end_date=end_date,
             date_value=date_value,
             period=period,
             trader_id=trader_id,

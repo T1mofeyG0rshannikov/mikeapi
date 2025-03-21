@@ -83,9 +83,12 @@ class DealAdmin(BaseModelView, model=LogOrm):
         if trader_id:
             filters &= and_(LogOrm.user_id==int(trader_id))
         if start_date:
-            filters &= and_(LogOrm.created_at >= datetime.strptime(start_date, "%d.%m.%Y"))
+            print(datetime.strptime(start_date, "%d.%m.%Y"))
+            print(pytz.UTC.localize(datetime.strptime(start_date, "%d.%m.%Y")))
+            filters &= and_(LogOrm.created_at >= pytz.UTC.localize(datetime.strptime(start_date, "%d.%m.%Y")))
         if end_date:
-            filters &= and_(LogOrm.created_at <= datetime.strptime(end_date, "%d.%m.%Y"))
+            print(end_date)
+            filters &= and_(LogOrm.created_at <= pytz.UTC.localize(datetime.strptime(end_date, "%d.%m.%Y")))
 
         return filters
     
