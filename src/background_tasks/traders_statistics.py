@@ -33,13 +33,10 @@ class CreateTraderStatistics:
             print(trader)
             last_statistics = await self.repository.last_statistics(trader_id=trader.id, period=period.view)
             all_deals = await self.deal_repository.filter(trader_id=trader.id, start_time=start_date)
-            for i in range(0, days_count, period.days):
+            for i in range(days_count, -1, -period.days):
                 timezone = pytz.UTC
 
                 aware_end_time = timezone.localize(today - timedelta(days=i))
-                if i == 0:
-                    print(today)
-                    print(aware_end_time)
                 aware_start_time = timezone.localize(today - timedelta(days=i+period.days))
                 deals = [deal for deal in all_deals if aware_start_time <= deal.created_at <= aware_end_time ]
                 cash_balance = 0

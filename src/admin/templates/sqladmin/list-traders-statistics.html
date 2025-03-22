@@ -132,7 +132,7 @@
               <a href="{{ request.url.include_query_params(sort='asc') }}"><i class="fa-solid fa-arrow-down"></i> {{ label
                 }}</a>
               {% else %}
-              <a href="{{ request.url.include_query_params(sortBy=name, sort='asc') }}">{{ label }}</a>
+              <a href="{{ request.url.include_query_params(sortBy=name, sort='desc') }}">{{ label }}</a>
               {% endif %}
               {% else %}
               {{ label }}

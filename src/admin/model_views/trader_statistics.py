@@ -37,7 +37,26 @@ def render_degrees(value: int | None) -> str:
 
 class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
     column_list = [
-        TraderStatisticOrm.date_value, 
+        TraderStatisticOrm.end_date,
+        TraderStatisticOrm.trader,
+    
+        TraderStatisticOrm.cash_balance,
+
+        TraderStatisticOrm.stock_balance,
+        TraderStatisticOrm.active_lots,
+
+        TraderStatisticOrm.deals,
+        
+        TraderStatisticOrm.trade_volume,
+        TraderStatisticOrm.income,
+
+        TraderStatisticOrm.yield_,
+        TraderStatisticOrm.gain,
+        TraderStatisticOrm.tickers
+    ]
+    
+    column_sortable_list = [
+        TraderStatisticOrm.end_date,
         TraderStatisticOrm.trader,
     
         TraderStatisticOrm.cash_balance,
@@ -56,6 +75,7 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
     ]
 
     column_formatters = {
+        TraderStatisticOrm.end_date: lambda a, _: a.date_value,
         TraderStatisticOrm.trader: lambda a, _: Markup(
             f"""<a href="{URLPath(f'''/admin/trader-statistic-orm/list?trader_id={a.trader_id}''')}">{a.trader}</a>"""
         ),
@@ -73,7 +93,7 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
     name = "Торговля"
     name_plural = "Торговля"
 
-    column_default_sort = ("id", "desc")
+    column_default_sort = ("end_date", "desc")
 
     page_size = 100
     
