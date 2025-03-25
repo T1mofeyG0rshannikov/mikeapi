@@ -23,7 +23,7 @@ class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> LoginResponse:
         user_repository = await Container.user_repository()
         if self.config.debug:
-            return True
+            LoginResponse(ok=True)
 
         form = await request.form()
         email, password = form["email"], form["password"]

@@ -1,4 +1,4 @@
-from src.entites.trader import StatisticPeriodEnum
+from src.entites.trader import StatisticPeriodEnum, StatisticPeriod
 from src.db.models.models import TraderStatisticOrm
 from markupsafe import Markup
 from fastapi.requests import Request
@@ -6,19 +6,26 @@ from fastapi.requests import Request
 from src.admin.model_views.base import BaseModelView
 from sqlalchemy import (
     and_,
-    select,
-    func,
     Select
 )
-from sqladmin.pagination import Pagination
-from sqlalchemy.orm import selectinload
 from starlette.routing import URLPath
-
+from datetime import datetime, timedelta
 
 DEGREES_COLORS = {
     "more": "(20, 215, 20)",
     "less": "(255, 100, 100)"
 }
+
+
+def format_sum(num: float) -> str:
+    num = round(num)
+    if abs(num) // 1_000_000 > 0:
+        return f"{num // 1_000_000}M"
+    if abs(num) // 1_000 > 0:
+        return f"{num // 1_000}K"
+
+    return str(num)
+
 
 def render_degrees(value: int | None) -> str:
     if value is None:
@@ -26,13 +33,10 @@ def render_degrees(value: int | None) -> str:
     
     if value == 0:
         return ""
-    
-    if value == int(value):
-        value = int(value)
-    else:
-        value = round(value, 2)
 
-    return f'''<span style="color: rgb{DEGREES_COLORS["more" if value > 0 else "less"]}">({value if value < 0 else f"+{value}"})</span>'''
+    value_format = format_sum(value)
+
+    return f'''<span style="color: rgb{DEGREES_COLORS["more" if value > 0 else "less"]}">({value_format if value < 0 else f"+{value_format}"})</span>'''
 
 
 class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
@@ -80,10 +84,10 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
             f"""<a href="{URLPath(f'''/admin/trader-statistic-orm/list?trader_id={a.trader_id}''')}">{a.trader}</a>"""
         ),
         TraderStatisticOrm.gain: lambda a, _: Markup(f"{round(a.gain, 2)} % {render_degrees(a.gain_degrees)}"),
-        TraderStatisticOrm.trade_volume: lambda a, _: Markup(f"{round(a.trade_volume)} ₽ {render_degrees(a.trade_volume_degrees)}"),
-        TraderStatisticOrm.stock_balance: lambda a, _: Markup(f"{round(a.stock_balance)} ₽ {render_degrees(a.stock_balance_degrees)}"),
-        TraderStatisticOrm.cash_balance: lambda a, _: Markup(f"{round(a.cash_balance)} ₽ {render_degrees(a.cash_balance_degrees)}"),
-        TraderStatisticOrm.income: lambda a, _: Markup(f"{round(a.income)} ₽ {render_degrees(a.income_degrees)}"),
+        TraderStatisticOrm.trade_volume: lambda a, _: Markup(f"{format_sum(a.trade_volume)} ₽ {render_degrees(a.trade_volume_degrees)}"),
+        TraderStatisticOrm.stock_balance: lambda a, _: Markup(f"{format_sum(a.stock_balance)} ₽ {render_degrees(a.stock_balance_degrees)}"),
+        TraderStatisticOrm.cash_balance: lambda a, _: Markup(f"{format_sum(a.cash_balance)} ₽ {render_degrees(a.cash_balance_degrees)}"),
+        TraderStatisticOrm.income: lambda a, _: Markup(f"{format_sum(a.income)} ₽ {render_degrees(a.income_degrees)}"),
         TraderStatisticOrm.yield_: lambda a, _: Markup(f"{round(a.yield_, 2)} {render_degrees(a.yield_degrees)}"),
         TraderStatisticOrm.deals: lambda a, _: Markup(
             f"""<a href="{URLPath(f'''/admin/log-orm/list?trader_id={a.trader_id}&start_date={a.start_date.strftime("%d.%m.%Y")}&end_date={a.end_date.strftime("%d.%m.%Y")}''')}">{a.deals} {render_degrees(a.deals_degrees)}</a>"""
@@ -116,46 +120,10 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
         trader_id = request.query_params.get("trader_id")
         period = request.query_params.get("period", StatisticPeriodEnum.week)
 
-        filters = and_(TraderStatisticOrm.period==period)        
+        filters = and_(TraderStatisticOrm.period==period)
 
         if trader_id:
             filters &= and_(TraderStatisticOrm.trader_id==int(trader_id))
-
+        else:
+            filters &= and_(TraderStatisticOrm.end_date >= (datetime.today() - timedelta(days=StatisticPeriod(period).days)).date())
         return filters
-    
-    async def list(self, request: Request) -> Pagination:
-        page = self.validate_page_number(request.query_params.get("page"), 1)
-        page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
-        page_size = min(page_size or self.page_size, max(self.page_size_options))
-
-        stmt = self.list_query(request).filter(self.filters_from_request(request))
-        for relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation))
-
-        stmt = self.sort_query(stmt, request)
-
-        count = await self.count(request, select(func.count()).select_from(stmt))
-
-        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
-        rows = await self._run_query(stmt)
-
-        pagination = Pagination(
-            rows=rows,
-            page=page,
-            page_size=page_size,
-            count=count,
-        )
-
-        return pagination
-    
-    def get_list_value(self, model, column):
-        able_types = [int, float]
-        try:
-            previous = self.previous
-        except AttributeError:
-            self.previous = model
-            return super().get_list_value(model, column)
-
-        if self.previous != model:
-            self.previous = model 
-        return super().get_list_value(model, column)

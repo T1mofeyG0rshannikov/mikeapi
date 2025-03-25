@@ -15,7 +15,7 @@ from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.scheduler_repository import SchedulerRepository
 from src.repositories.vendor_repository import VendorRepository
-from src.repositories.log_repository import LogRepository
+from src.repositories.log_repository import DealRepository
 from src.background_tasks.check_server_available import CheckServerActivity
 from src.db.database import get_db
 from src.dependencies.base_dependencies import get_redis
@@ -26,7 +26,7 @@ from src.usecases.create_traders.create_traders import CreateTraders
 
 class Container(containers.Container):
     db = providers.Resource(get_db)
-    log_repository = providers.Factory(LogRepository, db=db)
+    log_repository = providers.Factory(DealRepository, db=db)
     vendor_repository = providers.Factory(VendorRepository, db=db)
     ticker_repository = providers.Factory(TickerRepository, db=db)
     trader_repository = providers.Factory(TraderRepository, db=db)

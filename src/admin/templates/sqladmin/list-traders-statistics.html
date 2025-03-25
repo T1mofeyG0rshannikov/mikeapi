@@ -73,7 +73,7 @@
           <div style="min-width: 130px;">
             <select onchange="selectPeriod(event)">
               {% for period in model_view.model.periods %}
-                <option value="{{ period }}" {% if request.query_params.get("period") == period %}selected{% endif %}>{{ period }}</option>
+                <option value="{{ period }}" {% if request.query_params.get("period") == period or not request.query_params.get("period") and period=="7 дней" %}selected{% endif %}>{{ period }}</option>
               {% endfor %}
               </select>
           </div>
@@ -253,4 +253,12 @@
   {% endif %}
   {% endfor %}
 </div>
+<style>
+  td{
+      font-size: 12px;
+  }
+  th{
+    padding: .45rem .45rem!important;
+  }
+</style>
 {% endblock %}

@@ -33,7 +33,7 @@ async def vendor_not_found_exc_handler(request: Request, exc: VendorNotFoundErro
 
 
 async def not_permitted_exc_handler(request: Request, exc: NotPermittedError) -> JSONResponse:
-    return JSONResponse(status_code=404, content={"error": "Resource not permitted", "details": exc.message})
+    return JSONResponse(status_code=403, content={"error": "Resource not permitted", "details": exc.message})
 
 
 async def invalid_create_log_request_exc_handler(request: Request, exc: InvalidCreateLogRequest) -> JSONResponse:

@@ -1,14 +1,14 @@
 from datetime import datetime
 
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 
-from src.db.models.models import LogOrm, TickerOrm, TraderOrm, UnsuccessLog
+from src.db.models.models import DealOrm, TickerOrm, TraderOrm, UnsuccessLog
 from src.repositories.base_reposiotory import BaseRepository
 from src.entites.deal import DealOperations
 from sqlalchemy.orm import joinedload
 
 
-class LogRepository(BaseRepository):
+class DealRepository(BaseRepository):
     async def create(
         self,
         app_id: int,
@@ -19,8 +19,8 @@ class LogRepository(BaseRepository):
         price: float,
         ticker: str,
         operation: str,
-    ) -> LogOrm:
-        log = LogOrm(
+    ) -> DealOrm:
+        log = DealOrm(
             app_id=app_id,
             time=time,
             main_server=main_server,
@@ -40,21 +40,31 @@ class LogRepository(BaseRepository):
         self.db.add(log)
         await self.db.commit()
         
-    async def last(self, ticker_slug: str=None) -> LogOrm:
+    async def last(self, ticker_slug: str=None) -> DealOrm:
         filters = and_()
         if ticker_slug:
             filters &= and_(TickerOrm.slug==ticker_slug)
 
-        trade = await self.db.execute(select(LogOrm).where(filters).order_by(LogOrm.id.desc()).limit(1))
+        trade = await self.db.execute(select(DealOrm).where(filters).order_by(DealOrm.id.desc()).limit(1))
         return trade.scalar()
     
-    async def filter(self, trader_id: int = None, operation: DealOperations = None, start_time: datetime = None) -> list[LogOrm]:
+    async def filter(self, trader_id: int = None, operation: DealOperations = None, start_time: datetime = None) -> list[DealOrm]:
         filters = and_()
         if trader_id:
-            filters &= and_(LogOrm.user_id == trader_id)
+            filters &= and_(DealOrm.user_id == trader_id)
         if operation:
-            filters &= and_(LogOrm.operation == operation )
+            filters &= and_(DealOrm.operation == operation )
         if start_time:
-            filters &= and_(LogOrm.created_at >= start_time)
-        deals = await self.db.execute(select(LogOrm).join(TickerOrm).where(filters).options(joinedload(LogOrm.ticker)))
+            filters &= and_(DealOrm.created_at >= start_time)
+        deals = await self.db.execute(select(DealOrm).join(TickerOrm).where(filters).options(joinedload(DealOrm.ticker)))
         return deals.scalars().all()
+
+    async def count(self, ticker_id: int = None, time_gte: datetime = None) -> int:
+        filters = and_()
+        if ticker_id is not None:
+            filters &= and_(DealOrm.ticker_id==ticker_id)
+        if time_gte is not None:
+            filters &= and_(DealOrm.time >= time_gte)
+
+        count = await self.db.execute(select(func.count(DealOrm.id)).where(filters))
+        return count.scalar()

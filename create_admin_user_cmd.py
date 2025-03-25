@@ -12,7 +12,7 @@ async def create_admin_user(
     password,
     password_hasher: PasswordHasher = get_password_hasher(),
 ) -> None:
-    user_repository = await Container.user_repository(),
+    user_repository = await Container.user_repository()
     hashed_password = password_hasher.hash_password(password)
     await user_repository.create(username=username, email=email, hashed_password=hashed_password, is_superuser=True)
     print(f"User '{username}' successfully created!")

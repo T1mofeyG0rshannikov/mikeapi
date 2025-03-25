@@ -1,8 +1,6 @@
-from datetime import datetime
-
 from sqlalchemy import select, and_, func
 
-from src.db.models.models import LogOrm, TickerOrm
+from src.db.models.models import DealOrm, TickerOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 
@@ -22,16 +20,12 @@ class TickerRepository(BaseRepository):
 
         return ticker
  
-    async def last(self):
-        trade = await self.db.execute(select(LogOrm).order_by(LogOrm.id.desc()).limit(1))
-        return trade.scalar()
-    
     async def count(self, trader_id: int) -> int:
         query = select(func.count(TickerOrm.id))
         filters = and_()
         if trader_id:
-            query = query.join(LogOrm)
-            filters &= and_(LogOrm.user_id==trader_id)
+            query = query.join(DealOrm)
+            filters &= and_(DealOrm.user_id==trader_id)
 
         result = await self.db.execute(query.where(filters))
         return result.scalar_one()

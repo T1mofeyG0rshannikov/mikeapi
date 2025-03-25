@@ -73,8 +73,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_log_id"), "log", ["id"], unique=False)
-    op.drop_index("ix_reverse_url_id", table_name="reverse_url")
-    op.drop_table("reverse_url")
+    #op.drop_index("ix_reverse_url_id", table_name="reverse_url")
+    #op.drop_table("reverse_url")
     # ### end Alembic commands ###
 
 

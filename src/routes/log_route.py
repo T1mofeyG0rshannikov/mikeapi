@@ -21,7 +21,7 @@ from src.entites.trader import TraderWatch
 from src.entites.vendor import Device
 from src.exceptions import APIServerError, InvalidCreateLogRequest
 from src.generate_user_code import code_exists, generate_code, get_code_index
-from src.repositories.log_repository import LogRepository
+from src.repositories.log_repository import DealRepository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.trader_repository import TraderRepository
 from src.schemas.common import APIResponse
@@ -39,7 +39,7 @@ async def create_log(
     trader_repository: Annotated[TraderRepository, Depends(get_trader_repository)],
     ping_repository: Annotated[PingRepository, Depends(get_ping_repository)],
     ticker_repository: Annotated[TickerRepository, Depends(get_ticker_repository)],
-    log_repository: Annotated[LogRepository, Depends(get_log_repository)],
+    log_repository: Annotated[DealRepository, Depends(get_log_repository)],
 ) -> APIResponse:
     try:
         if data.action == "ping":

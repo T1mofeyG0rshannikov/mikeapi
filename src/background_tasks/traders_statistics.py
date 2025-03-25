@@ -1,5 +1,5 @@
 from src.repositories.settings_repository import SettingsRepository
-from src.repositories.log_repository import LogRepository
+from src.repositories.log_repository import DealRepository
 from src.entites.trader import StatisticPeriod, StatisticPeriodEnum, TraderWatch
 from src.repositories.trader_repository import TraderRepository
 from src.entites.deal import DealOperations
@@ -12,7 +12,7 @@ class CreateTraderStatistics:
     def __init__(
         self,
         repository: TraderRepository,
-        deal_repository: LogRepository,
+        deal_repository: DealRepository,
     ) -> None:
         self.repository = repository
         self.deal_repository = deal_repository
@@ -24,27 +24,26 @@ class CreateTraderStatistics:
         start_date: datetime
     ) -> None:
         traders = await self.repository.filter(watch=TraderWatch.on)
-        traders = traders[0:5]
+        traders = traders[0:50]
 
-        today = datetime.today()
-        days_count = (today.date() - start_date).days
+        yesterday = (datetime.now(pytz.timezone("Europe/Moscow")).date() - timedelta(days=1))
+        days_count = (yesterday - start_date).days
 
         for trader in traders:
-            print(trader)
             last_statistics = await self.repository.last_statistics(trader_id=trader.id, period=period.view)
             all_deals = await self.deal_repository.filter(trader_id=trader.id, start_time=start_date)
-            for i in range(days_count, -1, -period.days):
-                timezone = pytz.UTC
+            list_range = list(range(0, days_count+1, period.days))
+            for i in reversed(list_range):
+                aware_end_time = yesterday - timedelta(days=i)
+                aware_start_time = yesterday - timedelta(days=i+period.days-1)
 
-                aware_end_time = timezone.localize(today - timedelta(days=i))
-                aware_start_time = timezone.localize(today - timedelta(days=i+period.days))
-                deals = [deal for deal in all_deals if aware_start_time <= deal.created_at <= aware_end_time ]
+                deals = [deal for deal in all_deals if aware_start_time <= deal.created_at.date() <= aware_end_time ]
                 cash_balance = 0
                 active_lots = {}
                 deals_count = len(deals)
                 trade_volume = 0
                 income = 0
-                
+
                 for deal in deals:
                     active_lots[deal.ticker.slug] = active_lots.get(deal.ticker.slug, []) + [deal]
         
@@ -96,7 +95,7 @@ class CreateTraderStatistics:
                     statistics = await self.repository.create_statistics(
                         start_date=aware_start_time,
                         end_date=aware_end_time,
-                        date=today,
+                        date=yesterday,
                         period=period.view,
                         date_value=date_value,
                         trader_id=trader.id,
@@ -123,7 +122,7 @@ class CreateTraderStatistics:
                     statistics = await self.repository.create_statistics(
                         start_date=aware_start_time,
                         end_date=aware_end_time,
-                        date=today,
+                        date=yesterday,
                         period=period.view,
                         date_value=date_value,
                         trader_id=trader.id,
@@ -137,7 +136,7 @@ class CreateTraderStatistics:
                         gain=gain,
                         tickers=tickers_count,
                     )
-                #print(statistics)
+
                 last_statistics = statistics
 
 
@@ -164,9 +163,6 @@ class TraderStatistics:
         comission = settings.commission
         start_date = settings.start_date
 
-        for period in periods:    
-            if period.days == 1:
-                await self.create_statistics(period, comission=comission, start_date=(datetime.today() - timedelta(days=1)).date())
-            else:
-                await self.trader_repository.delete_statistics(period=period.view)
-                await self.create_statistics(period, comission=comission, start_date=start_date)
+        for period in periods:
+            await self.trader_repository.delete_statistics(period=period.view)
+            await self.create_statistics(period, comission=comission, start_date=start_date)

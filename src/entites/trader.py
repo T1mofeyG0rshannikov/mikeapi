@@ -69,13 +69,11 @@ class StatisticPeriod:
         
         elif self.view == StatisticPeriodEnum.week:
             today_ind = date.weekday()
-            last_day_ind = today_ind - 1
-            if last_day_ind == -1:
-                last_day_ind = 6
-            
-            return f'''{WEEKDAYS_LIST[today_ind]} {(date - timedelta(days=self.days)).strftime("%d.%m")} - {WEEKDAYS_LIST[last_day_ind]} {date.strftime("%d.%m")}'''
+            last_day_ind = (today_ind + 1) % 7
+
+            return f'''{WEEKDAYS_LIST[last_day_ind]} {(date - timedelta(days=self.days-1)).strftime("%d.%m")} - {WEEKDAYS_LIST[today_ind]} {date.strftime("%d.%m")}'''
     
-        return f'''{(date - timedelta(days=self.days)).strftime("%d.%m")} - {date.strftime("%d.%m")}'''
+        return f'''{(date - timedelta(days=self.days-1)).strftime("%d.%m")} - {date.strftime("%d.%m")}'''
     
     def start_date(self, date: datetime = None) -> datetime:
         if date is None:

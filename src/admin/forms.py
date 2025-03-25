@@ -27,8 +27,8 @@ class UserCreateForm(Form):
         if not field.data:
             raise ValueError("Password is Required")
 
-        if len(field.data) < 8:
-            raise ValueError("Password length should be more than 7 symbol")
+        if len(field.data) < 6:
+            raise ValueError("Password length should be more than 5 symbol")
 
     def populate_obj(self, obj):
         super().populate_obj(obj)

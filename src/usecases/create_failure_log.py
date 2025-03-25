@@ -1,10 +1,10 @@
 from fastapi import Request
 
-from src.repositories.log_repository import LogRepository
+from src.repositories.log_repository import DealRepository
 
 
 class CreateFailureLog:
-    def __init__(self, log_repository: LogRepository) -> None:
+    def __init__(self, log_repository: DealRepository) -> None:
         self.log_repository = log_repository
     
     async def __call__(self, request: Request) -> None:

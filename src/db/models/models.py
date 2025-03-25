@@ -40,7 +40,7 @@ class VendorOrm(Model):
     id = Column(Integer, primary_key=True, index=True)
     app_id = Column(String)
     auth_token = Column(String)
-    logs = relationship("LogOrm", back_populates="app")
+    logs = relationship("DealOrm", back_populates="app")
     traders = relationship("TraderOrm", back_populates="app")
     pings = relationship("PingOrm", back_populates="app")
 
@@ -90,7 +90,7 @@ class TraderOrm(Model):
 
     watch = Column(String, server_default="new")
     count = Column(Integer, default=0)
-    logs = relationship("LogOrm", back_populates="user")
+    logs = relationship("DealOrm", back_populates="user")
     app_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
     app = relationship(VendorOrm, back_populates="traders")
     last_update = Column(TIMESTAMP(timezone=True), nullable=True)
@@ -109,7 +109,7 @@ class TraderOrm(Model):
     )
 
 
-class LogOrm(Model):
+class DealOrm(Model):
     __tablename__ = "log"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -126,6 +126,10 @@ class LogOrm(Model):
 
     ticker_id = Column(Integer, ForeignKey("tickers.id"))
     ticker = relationship("TickerOrm", back_populates="logs")
+
+    closed = Column(Boolean, default=False)
+    profit = Column(Float, nullable=True)
+    yield_ = Column(Float, nullable=True)
 
 
 class LogActivityOrm(Model):
@@ -172,7 +176,7 @@ class TickerOrm(Model):
     type = Column(String, nullable=True)
     currency = Column(String)
 
-    logs = relationship("LogOrm")
+    logs = relationship("DealOrm")
 
     trades = Column(Integer, default=0)
     traders = Column(Integer, default=0)

@@ -6,8 +6,7 @@ from src.repositories.base_reposiotory import BaseRepository
 
 class UserRepository(BaseRepository):
     async def get(self, email: str) -> UserOrm:
-        query = select(UserOrm).where(UserOrm.email == email)
-        result = await self.db.execute(query)
+        result = await self.db.execute(select(UserOrm).where(UserOrm.email == email))
         return result.scalar()
 
     async def create(self, username: str, email: str, hashed_password: str, is_superuser: bool = False) -> UserOrm:

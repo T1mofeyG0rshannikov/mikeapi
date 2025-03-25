@@ -4,7 +4,7 @@ import pytz
 from sqlalchemy import func, select
 
 from src.db.database import get_db
-from src.db.models.models import LogActivityOrm, LogOrm
+from src.db.models.models import LogActivityOrm, DealOrm
 
 
 async def trades_activity() -> None:
@@ -23,7 +23,7 @@ async def trades_activity() -> None:
             db.add(activity)
             await db.commit()
 
-        last_hour_count = await db.execute(select(func.count(LogOrm.id)).where(LogOrm.time >= one_hour_ago_utc))
+        last_hour_count = await db.execute(select(func.count(DealOrm.id)).where(DealOrm.time >= one_hour_ago_utc))
         last_hour_count = last_hour_count.scalar_one()
 
         attr = str(now_msc.hour - 1)

@@ -7,7 +7,7 @@ from src.alerts_service.service import AlertsService
 from src.entites.contacts import ContactChannel
 from src.repositories.vendor_repository import VendorRepository
 from src.entites.alert import AlertChannels
-from src.repositories.log_repository import LogRepository
+from src.repositories.log_repository import DealRepository
 from src.repositories.scheduler_repository import SchedulerRepository
 from datetime import datetime
 
@@ -15,7 +15,7 @@ from datetime import datetime
 class CheckServerActivity:
     def __init__(
         self, 
-        repository: LogRepository, 
+        repository: DealRepository, 
         scheduler_repository: SchedulerRepository, 
         vendor_repository: VendorRepository,
         telegram_sender: TelegramSender,

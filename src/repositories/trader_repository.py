@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, delete
+from sqlalchemy import func, select, delete, and_
 
 from src.entites.trader import StatisticPeriodEnum, TraderWatch
 from src.db.models.models import TraderOrm, TraderStatisticOrm
@@ -111,5 +111,11 @@ class TraderRepository(BaseRepository):
         usernames = await self.db.execute(select(TraderOrm.username))
         return usernames.scalars().all()
         
-    async def delete_statistics(self, period: StatisticPeriodEnum) -> None:
-        await self.db.execute(delete(TraderStatisticOrm).where(TraderStatisticOrm.period==period))
+    async def delete_statistics(self, period: StatisticPeriodEnum = None, date: datetime = None) -> None:
+        filters = and_()
+        if period:
+            filters &= and_(TraderStatisticOrm.period==period)
+        if date:
+            filters &= and_(TraderStatisticOrm.date==date)
+
+        await self.db.execute(delete(TraderStatisticOrm).where(filters))

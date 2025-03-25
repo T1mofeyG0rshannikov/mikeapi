@@ -9,7 +9,7 @@ from src.repositories.ticker_repository import TickerRepository
 from src.db.database import get_db
 from src.entites.vendor import Device
 from src.exceptions import InvalidAuthTokenError, UrlNotFound, VendorNotFoundError
-from src.repositories.log_repository import LogRepository
+from src.repositories.log_repository import DealRepository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.trader_repository import TraderRepository
 from src.repositories.user_repository import UserRepository
@@ -29,8 +29,8 @@ def get_vendor_repository(db: AsyncSession = Depends(get_db)) -> VendorRepositor
     return VendorRepository(db)
 
 
-def get_log_repository(db: AsyncSession = Depends(get_db)) -> LogRepository:
-    return LogRepository(db)
+def get_log_repository(db: AsyncSession = Depends(get_db)) -> DealRepository:
+    return DealRepository(db)
 
 
 def get_trader_repository(db: AsyncSession = Depends(get_db)) -> TraderRepository:
