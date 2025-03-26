@@ -1,4 +1,5 @@
 from dependency_injector import containers, providers
+from src.background_tasks.tickers_activity import TickersActivity
 from src.repositories.user_repository import UserRepository
 from src.background_tasks.traders_statistics import CreateTraderStatistics, TraderStatistics
 from src.messaging.sms_sender.config import SMSAeroConfig
@@ -58,13 +59,10 @@ class Container(containers.Container):
         repository=server_log_repository,
         config=check_server_config
     )
-    create_trader_statistics = providers.Factory(CreateTraderStatistics,
-        repository=trader_repository, 
-        deal_repository=log_repository,
-    )
     trader_statistics = providers.Factory(TraderStatistics,
         settings_repository=settings_repository,
-        create_statistics=create_trader_statistics    
+        trader_repository=trader_repository,
+        deal_repository=log_repository   
     )
     add_usernames = providers.Factory(AddUsernames,
         repository=trader_repository, 
@@ -72,4 +70,9 @@ class Container(containers.Container):
     )
     create_traders = providers.Factory(CreateTraders,
         traders_repository=trader_repository
+    )
+    tickers_activity = providers.Factory(TickersActivity,
+        trader_repository=trader_repository,
+        deal_repository=log_repository,
+        ticker_repository=ticker_repository
     )

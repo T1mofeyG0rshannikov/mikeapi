@@ -6,16 +6,11 @@ async def trader_activity() -> None:
         repository = Container.trader_repository(db=db)
         settings_repository = Container.settings_repository(db=db)
         deal_repository = Container.log_repository(db=db)
-        
-        create_trader_statistics = Container.create_trader_statistics(
-            repository=repository,
-            deal_repository=deal_repository
-        )
 
         trader_activity_usecase = Container.trader_statistics(
             settings_repository=settings_repository,
-            create_statistics=create_trader_statistics,
-            trader_repository=repository
+            trader_repository=repository,
+            deal_repository=deal_repository
         )
         await trader_activity_usecase()
 
@@ -23,3 +18,8 @@ async def trader_activity() -> None:
 async def check_server() -> None:
     check_server_usecase = await Container.check_server()
     await check_server_usecase()
+
+
+async def tickers_activity() -> None:
+    tickers_activity_usecase = await Container.tickers_activity()
+    await tickers_activity_usecase()

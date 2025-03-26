@@ -43,8 +43,11 @@ class DealAdmin(BaseModelView, model=DealOrm):
         DealOrm.ticker,
         DealOrm.price,
         DealOrm.currency,
+        DealOrm.profit,
+        DealOrm.yield_,
         DealOrm.created_at,
         DealOrm.time,
+        DealOrm.closed
     ]
     
     def get_dynamic_list_columns(self, request: Request) -> List[str]:
@@ -97,6 +100,8 @@ class DealAdmin(BaseModelView, model=DealOrm):
         "price": "Цена",
         "created_at": "Создан",
         "main_server": "Сервер",
+        "profit": "Прибыль",
+        "yield_": "Маржа"
     }
 
     page_size = 100

@@ -68,3 +68,7 @@ class DealRepository(BaseRepository):
 
         count = await self.db.execute(select(func.count(DealOrm.id)).where(filters))
         return count.scalar()
+    
+    async def update(self, deal: DealOrm) -> None:
+        await self.db.commit()
+        await self.db.refresh(deal)

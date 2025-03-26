@@ -131,6 +131,9 @@ class DealOrm(Model):
     profit = Column(Float, nullable=True)
     yield_ = Column(Float, nullable=True)
 
+    end_deal_id = Column(Integer, ForeignKey("log.id"), nullable=True)
+    end_deal = relationship("DealOrm", remote_side=[id], backref="subordinates")
+
 
 class LogActivityOrm(Model):
     __tablename__ = "logsactivity"

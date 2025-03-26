@@ -1,12 +1,16 @@
 from src.entites.trader import StatisticPeriodEnum, StatisticPeriod
-from src.db.models.models import TraderStatisticOrm
+from src.db.models.models import TraderOrm, TraderStatisticOrm
 from markupsafe import Markup
 from fastapi.requests import Request
 
 from src.admin.model_views.base import BaseModelView
 from sqlalchemy import (
     and_,
-    Select
+    Select,
+    select,
+    func,
+    desc,
+    asc
 )
 from starlette.routing import URLPath
 from datetime import datetime, timedelta
@@ -15,7 +19,8 @@ DEGREES_COLORS = {
     "more": "(20, 215, 20)",
     "less": "(255, 100, 100)"
 }
-
+from sqladmin.pagination import Pagination
+from sqlalchemy.orm import selectinload
 
 def format_sum(num: float) -> str:
     num = round(num)
@@ -127,3 +132,64 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
         else:
             filters &= and_(TraderStatisticOrm.end_date >= (datetime.today() - timedelta(days=StatisticPeriod(period).days)).date())
         return filters
+    
+    def sort_query(self, stmt: Select, request: Request) -> Select:
+        """
+        A method that is called every time the fields are sorted
+        and that can be customized.
+        By default, sorting takes place by default fields.
+
+        The 'sortBy' and 'sort' query parameters are available in this request context.
+        """
+        sort_by = request.query_params.get("sortBy", None)
+        sort = request.query_params.get("sort", "asc")
+
+        if sort_by:
+            sort_fields = [(sort_by, sort == "desc")]
+        else:
+            sort_fields = self._get_default_sort()
+
+        for sort_field, is_desc in sort_fields:
+            model = self.model
+
+            parts = self._get_prop_name(sort_field).split(".")
+            for part in parts[:-1]:
+                model = getattr(model, part).mapper.class_
+                stmt = stmt.join(model)
+            print(parts[-1])
+            if parts[-1] == "trader":
+                if is_desc:
+                    stmt = stmt.order_by(desc(TraderOrm.username))
+                else:
+                    stmt = stmt.order_by(asc(TraderOrm.username))
+            else:
+                if is_desc:
+                    stmt = stmt.order_by(desc(getattr(model, parts[-1])))
+                else:
+                    stmt = stmt.order_by(asc(getattr(model, parts[-1])))
+        return stmt
+
+
+    async def list(self, request: Request) -> Pagination:
+        page = self.validate_page_number(request.query_params.get("page"), 1)
+        page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
+        page_size = min(page_size or self.page_size, max(self.page_size_options))
+
+        stmt = self.list_query(request).filter(self.filters_from_request(request))
+        for relation in self._list_relations:
+            stmt = stmt.options(selectinload(relation))
+
+        count = await self.count(request, select(func.count()).select_from(stmt.join(TraderOrm)))
+        stmt = self.sort_query(stmt, request)
+
+        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
+        rows = await self._run_query(stmt.join(TraderOrm))
+
+        pagination = Pagination(
+            rows=rows,
+            page=page,
+            page_size=page_size,
+            count=count,
+        )
+
+        return pagination

@@ -1,7 +1,7 @@
 from sqlalchemy import func, select, delete, and_
 
 from src.entites.trader import StatisticPeriodEnum, TraderWatch
-from src.db.models.models import TraderOrm, TraderStatisticOrm
+from src.db.models.models import DealOrm, TraderOrm, TraderStatisticOrm
 from src.repositories.base_reposiotory import BaseRepository
 from datetime import datetime
 
@@ -119,3 +119,19 @@ class TraderRepository(BaseRepository):
             filters &= and_(TraderStatisticOrm.date==date)
 
         await self.db.execute(delete(TraderStatisticOrm).where(filters))
+
+    async def count(self, ticker_id: int = None, time_gte: datetime = None) -> int:
+        filters = and_()
+        if ticker_id:
+            filters &= and_(DealOrm.ticker_id==ticker_id)
+            if time_gte:
+                filters &= and_(DealOrm.time >= time_gte)
+            subquery = (
+                select(DealOrm.user_id)
+                .where(filters)
+                .distinct()
+                .alias("subquery")
+            )
+
+            count = await self.db.execute(select(func.count(TraderOrm.id)).where(TraderOrm.id.in_(subquery)))
+            return count.scalar()
