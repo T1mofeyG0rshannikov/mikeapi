@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.dependencies.base_dependencies import get_admin_config
-from src.admin.init_admin import init_admin
+from src.admin.init import init_admin
 from src.background_tasks.init import init_scheduler
 from src.exc_handler import init_exc_handlers
 from src.routes.log_route import router as log_router

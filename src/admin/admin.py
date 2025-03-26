@@ -35,6 +35,6 @@ class CustomAdmin(Admin):
 
         if request_page > pagination.page:
             return RedirectResponse(request.url.include_query_params(page=pagination.page), status_code=302)
-
-        context = {"model_view": model_view, "pagination": pagination, "ticker_types": ""}
+        print(model_view.list_template)
+        context = {"model_view": model_view, "pagination": pagination}
         return await self.templates.TemplateResponse(request, model_view.list_template, context)

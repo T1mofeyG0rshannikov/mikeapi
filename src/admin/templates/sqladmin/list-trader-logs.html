@@ -76,10 +76,20 @@
               Задержки
             </label>
           </div>
+
+          <select onchange="handleSelect(event)">
+            <option value="">Все сделки</option>
+            <option value="true">Закрытые сделки</option>
+            <option value="false">Открытые сделки</option>
+          </select>
+
           </div>
 
           <script>
-
+            function handleSelect(event){
+              addParam('closed', event.target.value);
+            }
+          
             function addParams(list){
               const currentUrl = new URL(window.location.href);
               for (let param of list){
@@ -144,7 +154,7 @@
         </thead>
         <tbody>
           {% for row in pagination.rows %}
-          <tr {% if row.delayed %}style="color: #990000;"{% endif %}>
+          <tr {% if row.delayed %} style="color: #990000;"{% endif %}>
             <td>
               <input type="hidden" value="{{ get_object_identifier(row) }}">
               <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
@@ -188,6 +198,17 @@
             {% endif %}
             </td>
           </tr>
+          {% if row.closed %}
+          <tr>
+            {% with end_deal = row.end_deal %}
+              <span>{{ end_deal.time }}</span>
+              <span>{{ end_deal.operation }}</span>
+              <span>{{ end_deal.ticker }}</span>
+              <span>{{ end_deal.price }}</span>
+              <span>{{ end_deal.currency }}</span>
+            {% endwith %}
+          </tr>
+          {% endif %}
           {% endfor %}
         </tbody>
       </table>

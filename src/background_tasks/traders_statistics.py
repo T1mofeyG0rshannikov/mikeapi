@@ -23,6 +23,7 @@ class CreateTraderStatistics:
         comission: float, 
         start_date: datetime
     ) -> None:
+        await self.repository.delete_statistics(period=period.view)
         traders = await self.repository.filter(watch=TraderWatch.on)
         traders = traders[0:50]
 
@@ -97,7 +98,7 @@ class CreateTraderStatistics:
 
                                 if not last_deal.closed:
                                     last_deal.profit = profit
-                                    last_deal.yield_ = 2 * profit / (deal.price * (100 - comission) + last_deal.price * (100 + comission))
+                                    last_deal.yield_ = 2 * profit / (deal.price * (100 - comission) + last_deal.price * (100 + comission)) * 100
                                     last_deal.closed = True
                                     deal.end_deal = last_deal
                                     await self.deal_repository.update(last_deal)
@@ -188,7 +189,6 @@ class TraderStatistics:
             repository=trader_repository,
             deal_repository=deal_repository
         )
-        self.trader_repository = trader_repository
 
     async def __call__(self) -> None:
         periods = [
@@ -197,11 +197,10 @@ class TraderStatistics:
             StatisticPeriod(view=StatisticPeriodEnum.month),
             StatisticPeriod(view=StatisticPeriodEnum.three_months),
         ]
-        
+
         settings = await self.settings_repository.get()
         comission = settings.commission
         start_date = settings.start_date
 
         for period in periods:
-            await self.trader_repository.delete_statistics(period=period.view)
             await self.create_statistics(period, comission=comission, start_date=start_date)

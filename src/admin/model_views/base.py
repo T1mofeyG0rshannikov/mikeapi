@@ -48,3 +48,31 @@ class BaseModelView(ModelView):
         )
 
         return pagination
+
+
+def format_sum(num: float) -> str:
+    num = round(num)
+    if abs(num) // 1_000_000 > 0:
+        return f"{num // 1_000_000}M"
+    if abs(num) // 1_000 > 0:
+        return f"{num // 1_000}K"
+
+    return str(num)
+
+
+DEGREES_COLORS = {
+    "more": "(20, 215, 20)",
+    "less": "(255, 100, 100)"
+}
+
+
+def render_degrees(value: int | None) -> str:
+    if value is None:
+        return ""
+    
+    if value == 0:
+        return ""
+
+    value_format = format_sum(value)
+
+    return f'''<span style="color: rgb{DEGREES_COLORS["more" if value > 0 else "less"]}">({value_format if value < 0 else f"+{value_format}"})</span>'''

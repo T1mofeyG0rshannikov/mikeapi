@@ -16,6 +16,7 @@ from sqlalchemy import (
     select,
     text
 )
+from sqlalchemy.sql import expression
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
@@ -127,7 +128,7 @@ class DealOrm(Model):
     ticker_id = Column(Integer, ForeignKey("tickers.id"))
     ticker = relationship("TickerOrm", back_populates="logs")
 
-    closed = Column(Boolean, default=False)
+    closed = Column(Boolean, server_default=expression.false())
     profit = Column(Float, nullable=True)
     yield_ = Column(Float, nullable=True)
 

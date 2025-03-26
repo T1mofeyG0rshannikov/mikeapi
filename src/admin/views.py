@@ -1,9 +1,6 @@
-from fastapi.requests import Request
-from sqladmin import ModelView, action
-from sqladmin.helpers import slugify_class_name
-from sqlalchemy import delete
-from starlette.responses import RedirectResponse
+from sqladmin import ModelView
 
+from src.admin.model_views.base import BaseModelView
 from src.admin.forms import UserCreateForm
 from src.db.models.models import (
     APIURLSOrm,
@@ -29,7 +26,7 @@ class APIUrlsAdmin(ModelView, model=APIURLSOrm):
     name_plural = "API шлюзы"
 
 
-class LogActivityAdmin(ModelView, model=LogActivityOrm):
+class LogActivityAdmin(BaseModelView, model=LogActivityOrm):
     column_list = [
         LogActivityOrm.date,
         LogActivityOrm.hour00,
@@ -90,13 +87,6 @@ class LogActivityAdmin(ModelView, model=LogActivityOrm):
         "hour23": "23",
         "last_day": "за сутки",
     }
-
-    @action(name="delete_all", label="Удалить все", confirmation_message="Вы уверены?")
-    async def delete_all_action(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            await session.execute(delete(self.model))
-            await session.commit()
-            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
 
     column_formatters = {
         LogActivityOrm.date: lambda activity, _: activity.date.strftime("%d.%m.%Y"),

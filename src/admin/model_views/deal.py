@@ -4,7 +4,7 @@ from fastapi.requests import Request
 
 from starlette.requests import Request
 from src.db.database import Session
-from src.admin.model_views.base import BaseModelView
+from src.admin.model_views.base import BaseModelView, format_sum, render_degrees
 from src.db.models.models import DealOrm, SettingsOrm
 from sqladmin.pagination import Pagination
 from sqlalchemy.orm import selectinload
@@ -74,6 +74,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
     name = "Сделка"
     name_plural = "Сделки"
     list_template = "sqladmin/list-logs.html"
+    trader_list_template = "sqladmin/list-trader-logs.html"
 
     column_default_sort = ("id", "desc")
     column_formatters = {
@@ -86,6 +87,8 @@ class DealAdmin(BaseModelView, model=DealOrm):
         DealOrm.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
             "%d.%m.%Y %H:%M:%S"
         ),
+        DealOrm.profit: lambda log, _: f"{render_degrees(log.profit)} ₽",
+        DealOrm.yield_: lambda log, _: f"{round(log.yield_, 2)} %",
         DealOrm.time: lambda log, _: log.time.astimezone(pytz.timezone("Europe/Moscow")).strftime("%d.%m.%Y %H:%M:%S"),
         DealOrm.operation: lambda log, _: Markup(f'''<span style="color: rgb{operation_colors[log.operation]}">{log.operation}</span>''')
     }
@@ -112,7 +115,8 @@ class DealAdmin(BaseModelView, model=DealOrm):
         trader_id = request.query_params.get("trader_id")
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
-        
+        closed = request.query_params.get("closed")
+
         if delayed:
             delayed = delayed == "true"
         
@@ -132,6 +136,10 @@ class DealAdmin(BaseModelView, model=DealOrm):
         if end_date:
             filters &= and_(DealOrm.created_at <= datetime.strptime(end_date, "%d.%m.%Y") + timedelta(days=1))
 
+        if closed:
+            closed = closed == "true"
+            filters &= and_(DealOrm.closed==closed)
+
         return filters
     
     
@@ -141,8 +149,10 @@ class DealAdmin(BaseModelView, model=DealOrm):
 
         if trader_id:
             self._list_formatters = self._build_column_pairs(self.trader_column_formatters)
+            self.list_template = self.trader_list_template
         else:
             self._list_formatters = self._build_column_pairs(self.column_formatters)
+            self.list_template = self.list_template
 
         page = self.validate_page_number(request.query_params.get("page"), 1)
         page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)

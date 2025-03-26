@@ -13,6 +13,5 @@ def init_scheduler() -> None:
     scheduler.add_job(tickers_activity, "cron", hour="*")
     scheduler.add_job(check_server, "cron", minute="*")
     scheduler.add_job(trader_activity, "cron", minute="*")
-    scheduler.add_job(trader_activity, "cron", minute="*")
 
     scheduler.start()
