@@ -29,3 +29,7 @@ class TickerRepository(BaseRepository):
 
         result = await self.db.execute(query.where(filters))
         return result.scalar_one()
+    
+    async def update(self, ticker: TickerOrm) -> None:
+        await self.db.refresh(ticker)
+        await self.db.commit()

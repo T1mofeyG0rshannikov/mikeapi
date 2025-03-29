@@ -7,15 +7,11 @@ from src.admin.model_views.base import BaseModelView, format_sum, render_degrees
 from sqlalchemy import (
     and_,
     Select,
-    select,
-    func,
     desc,
     asc
 )
 from starlette.routing import URLPath
 from datetime import datetime, timedelta
-from sqladmin.pagination import Pagination
-from sqlalchemy.orm import selectinload
 
 
 class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
@@ -130,7 +126,7 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
             for part in parts[:-1]:
                 model = getattr(model, part).mapper.class_
                 stmt = stmt.join(model)
-            print(parts[-1])
+
             if parts[-1] == "trader":
                 if is_desc:
                     stmt = stmt.order_by(desc(TraderOrm.username))
@@ -142,29 +138,3 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
                 else:
                     stmt = stmt.order_by(asc(getattr(model, parts[-1])))
         return stmt
-
-
-    async def list(self, request: Request) -> Pagination:
-        page = self.validate_page_number(request.query_params.get("page"), 1)
-        page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
-        page_size = min(page_size or self.page_size, max(self.page_size_options))
-
-        stmt = self.list_query(request).filter(self.filters_from_request(request))
-        for relation in self._list_relations:
-            stmt = stmt.options(selectinload(relation))
-            stmt = stmt.join(relation)
-
-        count = await self.count(request, select(func.count()).select_from(stmt))
-        stmt = self.sort_query(stmt, request)
-
-        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
-        rows = await self._run_query(stmt)
-
-        pagination = Pagination(
-            rows=rows,
-            page=page,
-            page_size=page_size,
-            count=count,
-        )
-
-        return pagination

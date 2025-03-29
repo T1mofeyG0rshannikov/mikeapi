@@ -14,7 +14,8 @@ from sqlalchemy import (
     case,
     func,
     select,
-    text
+    text,
+    literal
 )
 from sqlalchemy.sql import expression
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -109,7 +110,6 @@ class TraderOrm(Model):
        Index('ix_traders_username_lower', func.lower(username)), # Индекс на lower(username)
     )
 
-
 class DealOrm(Model):
     __tablename__ = "log"
 
@@ -134,6 +134,20 @@ class DealOrm(Model):
 
     end_deal_id = Column(Integer, ForeignKey("log.id"), nullable=True)
     end_deal = relationship("DealOrm", remote_side=[id], backref="subordinates")
+
+    @hybrid_property
+    def ticker_lot_label(self) -> int:
+        return 1
+
+    @hybrid_property
+    def summ_label(self) -> float:
+        return self.price * 1
+    
+    def __str__(self) -> str:
+        return f"{self.operation} {self.ticker_id} - {self.time.strftime('%d.%m.%Y')}"
+    
+    def __repr__(self):
+        return f"{self.operation} {self.ticker_id} - {self.time.strftime('%d.%m.%Y')}"
 
 
 class LogActivityOrm(Model):
@@ -240,6 +254,13 @@ class SettingsOrm(Model):
     rare_tickers_limit = Column(Integer, default=0)
     commission = Column(Float)
     start_date = Column(Date)
+
+    count_stocks = Column(Boolean, server_default=literal(False))
+    count_futures = Column(Boolean, server_default=literal(False))
+    count_etfs = Column(Boolean, server_default=literal(False))
+    count_options = Column(Boolean, server_default=literal(False))
+    count_bonds = Column(Boolean, server_default=literal(False))
+    count_private_stocks = Column(Boolean, server_default=literal(False))
 
 
 class PingOrm(Model):

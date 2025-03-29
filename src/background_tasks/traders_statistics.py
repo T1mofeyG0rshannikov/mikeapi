@@ -1,3 +1,5 @@
+from src.entites.ticker import TICKER_TYPES
+from src.db.models.models import SettingsOrm
 from src.repositories.settings_repository import SettingsRepository
 from src.repositories.log_repository import DealRepository
 from src.entites.trader import StatisticPeriod, StatisticPeriodEnum, TraderWatch
@@ -6,6 +8,17 @@ from src.entites.deal import DealOperations
 from collections import deque
 from datetime import datetime, timedelta
 import pytz
+
+
+def get_selected_ticker_types(
+    settings: SettingsOrm
+) -> list[str]:
+    selected_types = []
+    for ticker in TICKER_TYPES:
+        if getattr(settings, f"count_{ticker['settings_set_field']}"):
+            selected_types.append(ticker["value"])
+
+    return selected_types
 
 
 class CreateTraderStatistics:
@@ -21,7 +34,8 @@ class CreateTraderStatistics:
         self, 
         period: StatisticPeriod, 
         comission: float, 
-        start_date: datetime
+        start_date: datetime,
+        ticker_types: list[str]
     ) -> None:
         await self.repository.delete_statistics(period=period.view)
         traders = await self.repository.filter(watch=TraderWatch.on)
@@ -32,8 +46,14 @@ class CreateTraderStatistics:
 
         for trader in traders:
             last_statistics = await self.repository.last_statistics(trader_id=trader.id, period=period.view)
-            all_deals = await self.deal_repository.filter(trader_id=trader.id, start_time=start_date)
+            await self.deal_repository.update_many(trader_id=trader.id, start_time=start_date, update_data={
+                "yield_": None,
+                "profit": None,
+                "closed": None
+            })
+            all_deals = await self.deal_repository.filter(trader_id=trader.id, start_time=start_date, ticker_types=ticker_types)
             list_range = list(range(0, days_count+1, period.days))
+
             for i in reversed(list_range):
                 aware_end_time = yesterday - timedelta(days=i)
                 aware_start_time = yesterday - timedelta(days=i+period.days-1)
@@ -58,6 +78,10 @@ class CreateTraderStatistics:
                     else:
                         cash_balance += (deal.price * lot) * (100 - comission) / 100
 
+                    #deal.closed=False
+                    #deal.end_deal = None
+                    #await self.deal_repository.update(deal)
+
                 for deal in period_deals:
                     period_active_lots[deal.ticker.slug] = period_active_lots.get(deal.ticker.slug, []) + [deal]
         
@@ -77,11 +101,14 @@ class CreateTraderStatistics:
                 active_lots_count = 0
                 profitable_deals = 0
                 unprofitable_deals = 0
-                
+
                 for ticker_slug, ticker_deals in period_active_lots.items():
                     que = deque()
                     last_ticker_deal = await self.deal_repository.last(ticker_slug=ticker_slug)
                     current_price = last_ticker_deal.price
+                    
+                    lot = ticker_deals[0].ticker.lot
+                    lot = lot if lot else 1
 
                     for deal in ticker_deals:
                         if deal.operation == DealOperations.buy:
@@ -89,21 +116,19 @@ class CreateTraderStatistics:
                         else:
                             if que:
                                 last_deal = que.popleft()
-                                profit = deal.price - last_deal.price - (deal.price + last_deal.price) * comission / 100
+                                profit = (deal.price - last_deal.price - (deal.price + last_deal.price) * comission / 100) * lot
                                 income += profit
                                 if profit > 0:
                                     profitable_deals += 1
                                 else:
                                     unprofitable_deals += 1
 
-                                if not last_deal.closed:
-                                    last_deal.profit = profit
-                                    last_deal.yield_ = 2 * profit / (deal.price * (100 - comission) + last_deal.price * (100 + comission)) * 100
-                                    last_deal.closed = True
-                                    deal.end_deal = last_deal
-                                    await self.deal_repository.update(last_deal)
-                                    await self.deal_repository.update(deal)
-                            
+                                deal.profit = profit
+                                deal.yield_ = (profit / (lot * last_deal.price)) * 100
+                                deal.closed = True
+                                deal.end_deal = last_deal
+                                await self.deal_repository.update(deal)
+
                     stock_balance += current_price * len(que)
                     active_lots_count += len(que)
 
@@ -184,6 +209,7 @@ class TraderStatistics:
         trader_repository: TraderRepository,
         deal_repository: DealRepository
     ) -> None:
+        self.deal_repository = deal_repository
         self.settings_repository = settings_repository
         self.create_statistics = CreateTraderStatistics(
             repository=trader_repository,
@@ -203,4 +229,6 @@ class TraderStatistics:
         start_date = settings.start_date
 
         for period in periods:
+            print(period)
             await self.create_statistics(period, comission=comission, start_date=start_date)
+        print("end statistics")

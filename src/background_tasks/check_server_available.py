@@ -130,19 +130,28 @@ class CheckServerActivity:
                     time = last_trade.created_at
                     if minutes_diff > rule.interval2:
                         if not self.alerts_service.is_second_send():
-                            await self.send_warning(time, first=False)
+                            try:
+                                await self.send_warning(time, first=False)
+                            except:
+                                pass
                             self.alerts_service.set_second_send(True)
                     elif minutes_diff > rule.interval1:
                         if not self.alerts_service.is_first_send():
                             await self.send_warning(time, first=True)
-                            self.alerts_service.set_first_send(True)
+                            try:
+                                self.alerts_service.set_first_send(True)
+                            except:
+                                pass
                             await self.server_log_repository.create(
                                 body=f'''Шлюз недоступен с {time.strftime("%d.%m.%Y %H:%M:%S")}'''
                             )
                     else:
                         if not self.alerts_service.is_pulled_up():
                             self.alerts_service.set_pulled_up()
-                            await self.send_recovered(time, logs=True)
+                            try:
+                                await self.send_recovered(time, logs=True)
+                            except:
+                                pass
                             await self.server_log_repository.create(
                                 body=f'''Шлюз восстановлен в {time.strftime("%d.%m.%Y %H:%M:%S")}'''
                             )
@@ -150,9 +159,9 @@ class CheckServerActivity:
 
     async def check_pings(self) -> None:
         alerts = await self.scheduler_repository.alerts()
-        
+
         time = datetime.now(timezone('Europe/Moscow'))
-        
+
         last_ping = await self.ping_repository.last()
         if last_ping is None:
             return
@@ -162,16 +171,25 @@ class CheckServerActivity:
         time = last_ping.created_at
         if minutes_diff > alerts.pings_interval2:
             if not self.alerts_service.is_second_send_ping():
-                await self.send_warning(time, first=False, logs=False)
+                try:
+                    await self.send_warning(time, first=False, logs=False)
+                except:
+                    pass
                 self.alerts_service.set_second_send_ping(True)
         elif minutes_diff > alerts.pings_interval1:
             if not self.alerts_service.is_first_send_ping():
-                await self.send_warning(time, first=True, logs=False)
+                try:
+                    await self.send_warning(time, first=True, logs=False)
+                except:
+                    pass
                 self.alerts_service.set_first_send_ping(True)
         else:
             if not self.alerts_service.is_pulled_up_ping():
                 self.alerts_service.set_pulled_up_ping()
-                await self.send_recovered(time, logs=False)
+                try:
+                    await self.send_recovered(time, logs=False)
+                except:
+                    pass
         
     async def __call__(self) -> None:
         await self.check_pings()

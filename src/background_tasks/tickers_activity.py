@@ -42,6 +42,6 @@ class TickersActivity:
             ticker.last_hour_traders = await self.trader_repository.count(ticker_id=ticker.id, time_gte=last_hour_time)
             ticker.last_hour = await self.deal_repository.count(ticker_id=ticker.id, time_gte=last_hour_time)
             ticker.last_trade_price = last_deal.price
-            await self.ticker_repository(ticker)
+            await self.ticker_repository.update(ticker)
 
         print("ticker activity")

@@ -3,11 +3,12 @@ import pytz
 from fastapi.requests import Request
 
 from starlette.requests import Request
+from src.admin.model_views.ticker import get_ticker_type_slug
 from src.db.database import Session
 from src.admin.model_views.base import BaseModelView, format_sum, render_degrees
-from src.db.models.models import DealOrm, SettingsOrm
+from src.db.models.models import DealOrm, SettingsOrm, TickerOrm
 from sqladmin.pagination import Pagination
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 
 from sqlalchemy import (
@@ -43,13 +44,15 @@ class DealAdmin(BaseModelView, model=DealOrm):
         DealOrm.ticker,
         DealOrm.price,
         DealOrm.currency,
+        DealOrm.ticker_lot_label,
+        DealOrm.summ_label,
         DealOrm.profit,
         DealOrm.yield_,
         DealOrm.created_at,
         DealOrm.time,
         DealOrm.closed
     ]
-    
+
     def get_dynamic_list_columns(self, request: Request) -> List[str]:
         """Get list of properties to display in List page."""
 
@@ -65,11 +68,13 @@ class DealAdmin(BaseModelView, model=DealOrm):
             exclude=column_exclude_list,
             defaults=[pk.name for pk in self.pk_columns],
         )
- 
+
     column_sortable_list = [
         DealOrm.created_at,
         DealOrm.time,
     ]
+
+    can_edit = False
 
     name = "Сделка"
     name_plural = "Сделки"
@@ -87,10 +92,16 @@ class DealAdmin(BaseModelView, model=DealOrm):
         DealOrm.created_at: lambda log, _: log.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
             "%d.%m.%Y %H:%M:%S"
         ),
-        DealOrm.profit: lambda log, _: f"{render_degrees(log.profit)} ₽",
-        DealOrm.yield_: lambda log, _: f"{round(log.yield_, 2)} %",
+        DealOrm.ticker_lot_label: lambda log, _: log.ticker.lot if log.ticker.lot else 1,
+        DealOrm.closed: lambda log, _: Markup('<i class="fa fa-check text-success"></i>') if (log.closed or log.subordinates) else '',
+        DealOrm.summ_label: lambda log, _: format_sum(log.price * (log.ticker.lot if log.ticker.lot else 1)),
+        DealOrm.profit: lambda log, _: Markup(f"{render_degrees(log.profit)} ₽") if (log.profit and format_sum(log.profit) != "0") else "",
+        DealOrm.yield_: lambda log, _: f"{round(log.yield_, 2)} %" if log.yield_ else "",
         DealOrm.time: lambda log, _: log.time.astimezone(pytz.timezone("Europe/Moscow")).strftime("%d.%m.%Y %H:%M:%S"),
-        DealOrm.operation: lambda log, _: Markup(f'''<span style="color: rgb{operation_colors[log.operation]}">{log.operation}</span>''')
+        DealOrm.operation: lambda log, _: Markup(f'''<span style="color: rgb{operation_colors[log.operation]}">{log.operation}</span>'''),
+        DealOrm.ticker: lambda log, _: Markup(
+            f"""<a href="https://www.tbank.ru/invest/{get_ticker_type_slug(log.ticker.type)}/{log.ticker.slug}/" target="_blank">{log.ticker.slug}</a>"""
+        ),
     }
 
     column_labels = {
@@ -104,7 +115,9 @@ class DealAdmin(BaseModelView, model=DealOrm):
         "created_at": "Создан",
         "main_server": "Сервер",
         "profit": "Прибыль",
-        "yield_": "Маржа"
+        "yield_": "Маржа",
+        "ticker_lot_label": "Лот",
+        "summ_label": "Сумма"
     }
 
     page_size = 100
@@ -119,7 +132,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
 
         if delayed:
             delayed = delayed == "true"
-        
+
         filters = and_()        
         if delayed:
             db = Session()            
@@ -141,8 +154,8 @@ class DealAdmin(BaseModelView, model=DealOrm):
             filters &= and_(DealOrm.closed==closed)
 
         return filters
-    
-    
+
+
     async def list(self, request: Request) -> Pagination:
         trader_id = request.query_params.get("trader_id")
         self._list_prop_names = self.get_dynamic_list_columns(request)
@@ -161,6 +174,11 @@ class DealAdmin(BaseModelView, model=DealOrm):
         stmt = self.list_query(request).filter(self.filters_from_request(request))
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
+        stmt = stmt.join(TickerOrm)
+
+        if trader_id:
+            stmt = stmt.options(joinedload(DealOrm.end_deal).selectinload(DealOrm.ticker))
+            stmt = stmt.options(joinedload(DealOrm.subordinates).selectinload(DealOrm.ticker))
 
         stmt = self.sort_query(stmt, request)
 
@@ -174,7 +192,15 @@ class DealAdmin(BaseModelView, model=DealOrm):
 
         for row in rows:
             row.delayed = (row.created_at - row.time).total_seconds() >= settings.log_delay
-        
+            if trader_id:
+                if row.end_deal:
+                    row.end_deal.created_at_f = row.end_deal.created_at.astimezone(pytz.timezone("Europe/Moscow")).strftime(
+                        "%d.%m.%Y %H:%M:%S"
+                    )
+                    row.end_deal.time_f = row.end_deal.time.astimezone(pytz.timezone("Europe/Moscow")).strftime("%d.%m.%Y %H:%M:%S")
+                row.ticker_lot = row.ticker.lot if row.ticker.lot else 1
+                row.summ = format_sum(row.price * row.ticker_lot)
+                
         pagination = Pagination(
             rows=rows,
             page=page,

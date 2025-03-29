@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, update
 
 from src.db.models.models import DealOrm, TickerOrm, TraderOrm, UnsuccessLog
 from src.repositories.base_reposiotory import BaseRepository
 from src.entites.deal import DealOperations
 from sqlalchemy.orm import joinedload
-
+import pytz
 
 class DealRepository(BaseRepository):
     async def create(
@@ -48,16 +48,36 @@ class DealRepository(BaseRepository):
         trade = await self.db.execute(select(DealOrm).where(filters).order_by(DealOrm.id.desc()).limit(1))
         return trade.scalar()
     
-    async def filter(self, trader_id: int = None, operation: DealOperations = None, start_time: datetime = None) -> list[DealOrm]:
+    async def filter(
+        self, 
+        trader_id: int = None, 
+        operation: DealOperations = None, 
+        start_time: datetime = None,
+        ticker_types: list[str] = None
+    ) -> list[DealOrm]:
         filters = and_()
         if trader_id:
             filters &= and_(DealOrm.user_id == trader_id)
         if operation:
             filters &= and_(DealOrm.operation == operation )
         if start_time:
-            filters &= and_(DealOrm.created_at >= start_time)
-        deals = await self.db.execute(select(DealOrm).join(TickerOrm).where(filters).options(joinedload(DealOrm.ticker)))
+            filters &= and_(DealOrm.time >= start_time)
+        if ticker_types:
+            filters &= and_(TickerOrm.name.in_(ticker_types))
+        deals = await self.db.execute(select(DealOrm).join(TickerOrm).where(filters).options(joinedload(DealOrm.ticker)).order_by(DealOrm.time))
         return deals.scalars().all()
+
+    async def update_many(self, update_data: dict, trader_id: int = None, start_time: datetime = None) -> list[DealOrm]:
+        filters = and_()
+        if trader_id:
+            filters &= and_(DealOrm.user_id == trader_id)
+        if start_time:
+            start_time = datetime(start_time.year, start_time.month, start_time.day)
+            timezone = pytz.UTC
+            start_time = timezone.localize(start_time)
+            filters &= and_(DealOrm.time >= start_time)
+        await self.db.execute(update(DealOrm).where(filters).values(**update_data))
+        await self.db.commit()
 
     async def count(self, ticker_id: int = None, time_gte: datetime = None) -> int:
         filters = and_()
@@ -72,3 +92,7 @@ class DealRepository(BaseRepository):
     async def update(self, deal: DealOrm) -> None:
         await self.db.commit()
         await self.db.refresh(deal)
+
+    async def all(self):
+        result = await self.db.execute(select(DealOrm))
+        return result.scalars().all()

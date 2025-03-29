@@ -13,7 +13,6 @@ class CustomAdmin(Admin):
             return await self.templates.TemplateResponse(request, "sqladmin/login.html")
 
         response = await self.authentication_backend.login(request)
-        print(response)
         if not response.ok:
             context["email_error_message"] = response.email_error_message
             context["password_error_message"] = response.password_error_message
@@ -35,6 +34,6 @@ class CustomAdmin(Admin):
 
         if request_page > pagination.page:
             return RedirectResponse(request.url.include_query_params(page=pagination.page), status_code=302)
-        print(model_view.list_template)
+
         context = {"model_view": model_view, "pagination": pagination}
         return await self.templates.TemplateResponse(request, model_view.list_template, context)

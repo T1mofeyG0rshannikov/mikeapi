@@ -78,9 +78,9 @@
           </div>
 
           <select onchange="handleSelect(event)">
-            <option value="">Все сделки</option>
-            <option value="true">Закрытые сделки</option>
-            <option value="false">Открытые сделки</option>
+            <option {% if request.query_params.get("closed") == "" %}selected{% endif %} value="">Все сделки</option>
+            <option {% if request.query_params.get("closed") == "true" %}selected{% endif %} value="true">Закрытые сделки</option>
+            <option {% if request.query_params.get("closed") == "false" %}selected{% endif %} value="false">Открытые сделки</option>
           </select>
 
           </div>
@@ -149,7 +149,7 @@
             </th>
 
             {% endfor %}
-            <th class="w-1"></th
+            <th class="w-1"></th>
           </tr>
         </thead>
         <tbody>
@@ -199,13 +199,23 @@
             </td>
           </tr>
           {% if row.closed %}
-          <tr>
+          <tr style="color: rgb(180, 180, 180);">
             {% with end_deal = row.end_deal %}
-              <span>{{ end_deal.time }}</span>
-              <span>{{ end_deal.operation }}</span>
-              <span>{{ end_deal.ticker }}</span>
-              <span>{{ end_deal.price }}</span>
-              <span>{{ end_deal.currency }}</span>
+            <td>
+              <input type="hidden" value="{{ get_object_identifier(row) }}">
+              <input class="form-check-input m-0 align-middle select-box" type="checkbox" aria-label="Select item">
+            </td>
+              <td></td>
+              <td><span>{{ end_deal.operation }}</span></td>
+              <td><span>{{ end_deal.ticker }}</span></td>
+              <td><span>{{ end_deal.price }}</span></td>
+              <td><span>{{ end_deal.currency }}</span></td>
+              <td><span>{{ end_deal.ticker_lot }}</span></td>
+              <td><span>{{ end_deal.summ }}</span></td>
+              <td></td>
+              <td></td>
+              <td><span>{{ end_deal.created_at_f }}</span></td>
+              <td><span>{{ end_deal.time_f }}</span></td>
             {% endwith %}
           </tr>
           {% endif %}

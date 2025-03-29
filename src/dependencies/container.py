@@ -1,7 +1,7 @@
 from dependency_injector import containers, providers
 from src.background_tasks.tickers_activity import TickersActivity
 from src.repositories.user_repository import UserRepository
-from src.background_tasks.traders_statistics import CreateTraderStatistics, TraderStatistics
+from src.background_tasks.traders_statistics import TraderStatistics
 from src.messaging.sms_sender.config import SMSAeroConfig
 from src.messaging.telegram_sender.sender import TelegramSender
 from src.messaging.sms_sender.sender import SMSSender

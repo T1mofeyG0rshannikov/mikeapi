@@ -32,10 +32,10 @@ class BaseModelView(ModelView):
         stmt = self.list_query(request).filter(self.filters_from_request(request))
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
-
-        stmt = self.sort_query(stmt, request)
+            stmt = stmt.join(relation)
 
         count = await self.count(request, select(func.count()).select_from(stmt))
+        stmt = self.sort_query(stmt, request)
 
         stmt = stmt.limit(page_size).offset((page - 1) * page_size)
         rows = await self._run_query(stmt)
@@ -51,12 +51,20 @@ class BaseModelView(ModelView):
 
 
 def format_sum(num: float) -> str:
-    num = round(num)
     if abs(num) // 1_000_000 > 0:
-        return f"{num // 1_000_000}M"
+        num = round(num / 1_000_000, 1)
+        if num == int(num):
+            num = int(num)
+        return f"{num}M"
     if abs(num) // 1_000 > 0:
-        return f"{num // 1_000}K"
+        num = round(num / 1_000, 1)
+        if num == int(num):
+            num = int(num)
+        return f"{num}K"
 
+    num = round(num, 2)
+    if num == int(num):
+        num = int(num)
     return str(num)
 
 
