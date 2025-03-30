@@ -73,6 +73,17 @@ DEGREES_COLORS = {
     "less": "(255, 100, 100)"
 }
 
+def render_profit(value: int | None) -> str:
+    if value is None:
+        return ""
+    
+    if value == 0:
+        return ""
+    
+    value_format = format_sum(value)
+    
+    return f'''<span style="color: rgb{DEGREES_COLORS["more" if value > 0 else "less"]}">{value_format}</span>'''
+
 
 def render_degrees(value: int | None) -> str:
     if value is None:

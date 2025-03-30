@@ -118,7 +118,7 @@ class DealOrm(Model):
     app = relationship(VendorOrm, back_populates="logs")
     time = Column(TIMESTAMP(timezone=True), index=True)
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))
-    user_id = Column(Integer, ForeignKey("traders.id", ondelete="CASCADE"))
+    user_id = Column(Integer, ForeignKey("traders.id", ondelete="CASCADE"), index=True)
     user = relationship(TraderOrm, back_populates="")
     main_server = Column(Boolean)
     price = Column(Float)
@@ -132,8 +132,12 @@ class DealOrm(Model):
     profit = Column(Float, nullable=True)
     yield_ = Column(Float, nullable=True)
 
-    end_deal_id = Column(Integer, ForeignKey("log.id"), nullable=True)
+    end_deal_id = Column(Integer, ForeignKey("log.id"), nullable=True, index=True)
     end_deal = relationship("DealOrm", remote_side=[id], backref="subordinates")
+
+    #__table_args__ = (
+    #   Index('ix_traders_username_lower', func.lower(username)), # Индекс на lower(username)
+    #)
 
     @hybrid_property
     def ticker_lot_label(self) -> int:

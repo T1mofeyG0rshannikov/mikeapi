@@ -1,7 +1,8 @@
 from dependency_injector import containers, providers
+from src.dependencies.repos_container import ReposContainer
+from src.background_tasks.traders_statistics import CreateTraderStatistics
 from src.background_tasks.tickers_activity import TickersActivity
 from src.repositories.user_repository import UserRepository
-from src.background_tasks.traders_statistics import TraderStatistics
 from src.messaging.sms_sender.config import SMSAeroConfig
 from src.messaging.telegram_sender.sender import TelegramSender
 from src.messaging.sms_sender.sender import SMSSender
@@ -25,9 +26,9 @@ from src.usecases.create_usernames import AddUsernames
 from src.usecases.create_traders.create_traders import CreateTraders
 
 
-class Container(containers.Container):
+class Container(ReposContainer):
     db = providers.Resource(get_db)
-    log_repository = providers.Factory(DealRepository, db=db)
+    #log_repository = providers.Factory(DealRepository, db=db)
     vendor_repository = providers.Factory(VendorRepository, db=db)
     ticker_repository = providers.Factory(TickerRepository, db=db)
     trader_repository = providers.Factory(TraderRepository, db=db)
@@ -44,7 +45,7 @@ class Container(containers.Container):
     scheduler_repository = providers.Factory(SchedulerRepository, db=db)
     settings_repository = providers.Factory(SettingsRepository, db=db)
     check_server_activity = providers.Factory(CheckServerActivity, 
-        repository=log_repository,
+        repository=ReposContainer.log_repository,
         scheduler_repository=scheduler_repository,
         vendor_repository=vendor_repository,
         telegram_sender=telegram_sender,
@@ -59,10 +60,10 @@ class Container(containers.Container):
         repository=server_log_repository,
         config=check_server_config
     )
-    trader_statistics = providers.Factory(TraderStatistics,
+    trader_statistics = providers.Factory(CreateTraderStatistics,
+        repository=trader_repository,
         settings_repository=settings_repository,
-        trader_repository=trader_repository,
-        deal_repository=log_repository   
+        deal_repository=ReposContainer.log_repository 
     )
     add_usernames = providers.Factory(AddUsernames,
         repository=trader_repository, 
@@ -73,6 +74,6 @@ class Container(containers.Container):
     )
     tickers_activity = providers.Factory(TickersActivity,
         trader_repository=trader_repository,
-        deal_repository=log_repository,
+        deal_repository=ReposContainer.log_repository,
         ticker_repository=ticker_repository
     )

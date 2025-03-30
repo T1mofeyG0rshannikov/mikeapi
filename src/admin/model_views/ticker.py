@@ -114,3 +114,6 @@ class TickerAdmin(BaseModelView, model=TickerOrm):
         ),
         TickerOrm.last_trade_price: lambda ticker, _: f"{ticker.last_trade_price if ticker.last_trade_price else ''} {ticker.currency if ticker.currency else ''}",
     }
+
+    column_details_exclude_list = [TickerOrm.logs]
+    form_excluded_columns = [TickerOrm.logs]

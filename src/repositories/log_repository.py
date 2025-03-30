@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import select, and_, func, update
+from sqlalchemy import select, and_, func, update, bindparam
 
 from src.db.models.models import DealOrm, TickerOrm, TraderOrm, UnsuccessLog
 from src.repositories.base_reposiotory import BaseRepository
@@ -45,7 +45,7 @@ class DealRepository(BaseRepository):
         if ticker_slug:
             filters &= and_(TickerOrm.slug==ticker_slug)
 
-        trade = await self.db.execute(select(DealOrm).where(filters).order_by(DealOrm.id.desc()).limit(1))
+        trade = await self.db.execute(select(DealOrm).join(TickerOrm).where(filters).order_by(DealOrm.time.desc()).limit(1))
         return trade.scalar()
     
     async def filter(
@@ -63,7 +63,7 @@ class DealRepository(BaseRepository):
         if start_time:
             filters &= and_(DealOrm.time >= start_time)
         if ticker_types:
-            filters &= and_(TickerOrm.name.in_(ticker_types))
+            filters &= and_(TickerOrm.type.in_(ticker_types))
         deals = await self.db.execute(select(DealOrm).join(TickerOrm).where(filters).options(joinedload(DealOrm.ticker)).order_by(DealOrm.time))
         return deals.scalars().all()
 
@@ -96,3 +96,14 @@ class DealRepository(BaseRepository):
     async def all(self):
         result = await self.db.execute(select(DealOrm))
         return result.scalars().all()
+    
+    async def update_mappings(self, mappings: dict) -> None:
+        '''await self.db.execute(
+            update(DealOrm).where(DealOrm.id == bindparam('id')).values(
+                profit=bindparam('profit'), 
+                end_deal=bindparam('end_deal'), 
+                closed=bindparam('closed'), 
+                yield_=bindparam('yield_')
+            ), mappings, synchronize_session=None)'''
+        await self.db.run_sync(lambda db: db.bulk_update_mappings(DealOrm, mappings=mappings))
+        await self.db.commit()

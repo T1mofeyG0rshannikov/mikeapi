@@ -8,7 +8,7 @@ from sqlalchemy import (
     and_,
     Select,
     desc,
-    asc
+    asc,
 )
 from starlette.routing import URLPath
 from datetime import datetime, timedelta

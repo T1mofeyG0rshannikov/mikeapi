@@ -9,7 +9,7 @@ async def trader_activity() -> None:
 
         trader_activity_usecase = Container.trader_statistics(
             settings_repository=settings_repository,
-            trader_repository=repository,
+            repository=repository,
             deal_repository=deal_repository
         )
         await trader_activity_usecase()

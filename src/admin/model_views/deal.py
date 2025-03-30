@@ -3,9 +3,10 @@ import pytz
 from fastapi.requests import Request
 
 from starlette.requests import Request
+from src.background_tasks.traders_statistics import get_selected_ticker_types
 from src.admin.model_views.ticker import get_ticker_type_slug
 from src.db.database import Session
-from src.admin.model_views.base import BaseModelView, format_sum, render_degrees
+from src.admin.model_views.base import DEGREES_COLORS, BaseModelView, format_sum, render_profit
 from src.db.models.models import DealOrm, SettingsOrm, TickerOrm
 from sqladmin.pagination import Pagination
 from sqlalchemy.orm import selectinload, joinedload
@@ -14,7 +15,8 @@ from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy import (
     and_,
     select,
-    func
+    func,
+    or_
 )
 from datetime import datetime, timedelta
 from markupsafe import Markup
@@ -95,8 +97,8 @@ class DealAdmin(BaseModelView, model=DealOrm):
         DealOrm.ticker_lot_label: lambda log, _: log.ticker.lot if log.ticker.lot else 1,
         DealOrm.closed: lambda log, _: Markup('<i class="fa fa-check text-success"></i>') if (log.closed or log.subordinates) else '',
         DealOrm.summ_label: lambda log, _: format_sum(log.price * (log.ticker.lot if log.ticker.lot else 1)),
-        DealOrm.profit: lambda log, _: Markup(f"{render_degrees(log.profit)} ₽") if (log.profit and format_sum(log.profit) != "0") else "",
-        DealOrm.yield_: lambda log, _: f"{round(log.yield_, 2)} %" if log.yield_ else "",
+        DealOrm.profit: lambda log, _: Markup(f"{render_profit(log.profit)}") if (log.profit and format_sum(log.profit) != "0") else "",
+        DealOrm.yield_: lambda log, _: Markup(f'''<span style="color: rgb{DEGREES_COLORS["more" if log.profit > 0 else "less"]};">{round(log.yield_, 2)} %</span>''') if log.yield_ else "",
         DealOrm.time: lambda log, _: log.time.astimezone(pytz.timezone("Europe/Moscow")).strftime("%d.%m.%Y %H:%M:%S"),
         DealOrm.operation: lambda log, _: Markup(f'''<span style="color: rgb{operation_colors[log.operation]}">{log.operation}</span>'''),
         DealOrm.ticker: lambda log, _: Markup(
@@ -128,12 +130,12 @@ class DealAdmin(BaseModelView, model=DealOrm):
         trader_id = request.query_params.get("trader_id")
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
-        closed = request.query_params.get("closed")
+        closed = request.query_params.get("closed", None)
 
         if delayed:
             delayed = delayed == "true"
 
-        filters = and_()        
+        filters = and_()
         if delayed:
             db = Session()            
             settings = db.execute(select(SettingsOrm)).scalar()
@@ -143,15 +145,24 @@ class DealAdmin(BaseModelView, model=DealOrm):
             )
 
         if trader_id:
+            db=Session()
+            settings = db.execute(select(SettingsOrm)).scalar()
+            ticker_types = get_selected_ticker_types(settings)
             filters &= and_(DealOrm.user_id==int(trader_id))
+            filters &= and_(TickerOrm.type.in_(ticker_types))
         if start_date:
-            filters &= and_(DealOrm.created_at >= datetime.strptime(start_date, "%d.%m.%Y"))
+            filters &= and_(DealOrm.time >= datetime.strptime(start_date, "%d.%m.%Y"))
         if end_date:
-            filters &= and_(DealOrm.created_at <= datetime.strptime(end_date, "%d.%m.%Y") + timedelta(days=1))
+            filters &= and_(DealOrm.time <= datetime.strptime(end_date, "%d.%m.%Y") + timedelta(days=1))
 
+        print(closed, "closed")
         if closed:
             closed = closed == "true"
-            filters &= and_(DealOrm.closed==closed)
+            print(closed)
+            if not closed:
+                filters &= and_(~DealOrm.closed.is_(True), ~DealOrm.subordinates.any())
+            else:
+                filters &= and_(or_(DealOrm.closed.is_(True), DealOrm.subordinates.any()))
 
         return filters
 
@@ -172,13 +183,13 @@ class DealAdmin(BaseModelView, model=DealOrm):
         page_size = min(page_size or self.page_size, max(self.page_size_options))
 
         stmt = self.list_query(request).filter(self.filters_from_request(request))
+        if trader_id:
+            stmt = stmt.options(joinedload(DealOrm.end_deal).selectinload(DealOrm.ticker))
+            stmt = stmt.options(joinedload(DealOrm.subordinates).selectinload(DealOrm.ticker))
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
         stmt = stmt.join(TickerOrm)
 
-        if trader_id:
-            stmt = stmt.options(joinedload(DealOrm.end_deal).selectinload(DealOrm.ticker))
-            stmt = stmt.options(joinedload(DealOrm.subordinates).selectinload(DealOrm.ticker))
 
         stmt = self.sort_query(stmt, request)
 
@@ -200,7 +211,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
                     row.end_deal.time_f = row.end_deal.time.astimezone(pytz.timezone("Europe/Moscow")).strftime("%d.%m.%Y %H:%M:%S")
                 row.ticker_lot = row.ticker.lot if row.ticker.lot else 1
                 row.summ = format_sum(row.price * row.ticker_lot)
-                
+
         pagination = Pagination(
             rows=rows,
             page=page,
