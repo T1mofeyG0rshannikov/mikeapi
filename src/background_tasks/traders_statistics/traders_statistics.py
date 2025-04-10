@@ -1,5 +1,5 @@
-from src.background_tasks.create_statistics import create_statistics
-from src.background_tasks.get_latest_trades import get_latest_trades
+from src.background_tasks.traders_statistics.create_statistics import create_statistics
+from src.background_tasks.traders_statistics.get_latest_trades import get_latest_trades
 from src.entites.ticker import TICKER_TYPES
 from src.db.models.models import DealOrm, SettingsOrm
 from src.repositories.settings_repository import SettingsRepository
@@ -10,6 +10,7 @@ from src.entites.deal import DealOperations
 from collections import deque
 from datetime import datetime, timedelta
 import pytz
+from collections import defaultdict
 
 
 def get_selected_ticker_types(
@@ -24,7 +25,7 @@ def get_selected_ticker_types(
 
 
 def count_profit(deal1: DealOrm, deal2: DealOrm, commission, lot) -> float:
-    if deal1.operation == DealOperations.sell:
+    if deal1.operation == DealOperations.buy:
         return (deal2.price - deal1.price - (deal1.price + deal2.price) * commission / 100) * lot
     return (deal1.price - deal2.price - (deal1.price + deal2.price) * commission / 100) * lot
 
@@ -69,20 +70,19 @@ class CreateTraderStatistics:
         for period in periods:
             await self.repository.delete_statistics(period=period.view)
 
-        last_ticker_deals = await get_latest_trades()
+        last_ticker_deals = await get_latest_trades(yesterday)
         ticker_slugs = list(last_ticker_deals.keys())
         
         for trader in traders:
             all_deals = await self.deal_repository.filter(trader_id=trader.id, start_time=start_date, ticker_types=ticker_types)
-            active_lots = {}
+            active_lots = defaultdict(list)
 
             for deal in all_deals:
-                active_lots[deal.ticker.slug] = active_lots.get(deal.ticker.slug, []) + [deal]
+                active_lots[deal.ticker.slug].append(deal)
 
             for ticker_slug, ticker_deals in active_lots.items():
-                que = deque() 
-                lot = ticker_deals[0].ticker.lot
-                lot = lot if lot else 1
+                que = deque()
+                lot = ticker_deals[0].ticker_lot
 
                 for deal in ticker_deals:
                     if not que:
@@ -104,7 +104,7 @@ class CreateTraderStatistics:
             for period in periods:
                 last_statistics = None
                 list_range = list(range(0, days_count+1, period.days))
-                period_deals_ques = dict()
+                period_deals_ques = defaultdict(deque)
 
                 for i in reversed(list_range):
                     aware_end_time = yesterday - timedelta(days=i)
@@ -112,7 +112,7 @@ class CreateTraderStatistics:
 
                     period_deals = [deal for deal in all_deals if aware_start_time <= deal.created_at.date() <= aware_end_time]
 
-                    period_active_lots = {}
+                    period_active_lots = defaultdict(list)
                     deals_count = len(period_deals)
                     trade_volume = 0
                     income = 0
@@ -121,14 +121,12 @@ class CreateTraderStatistics:
                     active_lots_count = 0
                     profitable_deals = 0
                     unprofitable_deals = 0
-
+                    closed_by_period_sum = 0
 
                     for deal in period_deals:
-                        lot = deal.ticker.lot
-                        if lot is None:
-                            lot = 1
+                        lot = deal.ticker_lot
 
-                        period_active_lots[deal.ticker.slug] = period_active_lots.get(deal.ticker.slug, []) + [deal]
+                        period_active_lots[deal.ticker.slug].append(deal)
                         trade_volume += deal.price * lot
 
                         if deal.operation == DealOperations.buy:
@@ -136,19 +134,20 @@ class CreateTraderStatistics:
                         else:
                             cash_balance += (deal.price * lot) * (100 - comission) / 100
 
+                        if deal.closed:
+                            closed_by_period_sum += deal.end_deal.price * lot
+
+                    tickers_count = len(period_active_lots)
 
                     for ticker_slug_period in ticker_slugs:
-                        ticker_deals = period_active_lots.get(ticker_slug_period, [])
-                        que = period_deals_ques.get(ticker_slug_period, deque())
+                        ticker_deals = period_active_lots[ticker_slug_period]
+                        que = period_deals_ques[ticker_slug_period]
                         last_ticker_deal = last_ticker_deals[ticker_slug_period]
 
                         if ticker_deals:
-                            lot = ticker_deals[0].ticker.lot
-                            lot = lot if lot else 1
+                            lot = ticker_deals[0].ticker_lot
 
                             for deal in ticker_deals:
-                                if trader.username == "Aleksei_Midakov" and ticker_slug_period == "BSPB":
-                                    print(que)
                                 if not que:
                                     que.append(deal)
                                     continue
@@ -157,7 +156,7 @@ class CreateTraderStatistics:
                                     que.append(deal)
                                 else:
                                     last_deal = que.popleft()
-                                    profit = (deal.price - last_deal.price - (deal.price + last_deal.price) * comission / 100) * lot
+                                    profit = count_profit(deal, last_deal, comission, lot)
                                     income += profit
                                     if profit > 0:
                                         profitable_deals += 1
@@ -166,16 +165,14 @@ class CreateTraderStatistics:
 
                         period_deals_ques[ticker_slug_period] = que
                         if que:
-                            lot = que[0].ticker.lot
-                            lot = lot if lot else 1
+                            lot = que[0].ticker_lot
                             count = len([d for d in que if d.operation == DealOperations.buy])
-                            stock_balance += last_ticker_deal.price * count * lot
+                            stock_balance += last_ticker_deal * count * lot
                             active_lots_count += count
 
                     stock_balance = stock_balance * (100 - comission) / 100
-                    yield_ = (2 * income / trade_volume if trade_volume != 0 else 0) * 100
+                    yield_ = (income / closed_by_period_sum if closed_by_period_sum != 0 else 0) * 100
 
-                    tickers_count = len(active_lots)
                     gain = (profitable_deals / (profitable_deals + unprofitable_deals) if (profitable_deals + unprofitable_deals) != 0 else 0) * 100
 
                     last_statistics = await create_statistics(

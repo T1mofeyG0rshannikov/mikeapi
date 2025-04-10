@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 from sqladmin import ModelView, action
@@ -22,7 +23,33 @@ class BaseModelView(ModelView):
             return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303)
 
     def filters_from_request(self, request: Request):
-        return and_()
+        filters = and_()
+        for f in self.diapazon_filter_fields:
+            diapazon_field_name = str(f).split(".")[1]
+            print(diapazon_field_name)
+            diapazon_field_request_l = request.query_params.get(f"{diapazon_field_name}_l", None)
+            diapazon_field_request_r = request.query_params.get(f"{diapazon_field_name}_r", None)
+
+            if diapazon_field_request_l:
+                filters &= and_(float(diapazon_field_request_l) <= getattr(self.model, diapazon_field_name))
+            if diapazon_field_request_r:
+                filters &= and_(getattr(self.model, diapazon_field_name) <= float(diapazon_field_request_r))
+
+        return filters
+    
+    def get_diapazon_columns(self) -> List[str]:
+        """Get list of properties to display in List page."""
+        column_list = getattr(self, "diapazon_filter_fields", None)
+
+        return self._build_column_list(
+            include=column_list,
+            exclude=[],
+            defaults=[pk.name for pk in self.pk_columns],
+        )
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self._filter_diapazon_list = self.get_diapazon_columns()
 
     async def list(self, request: Request) -> Pagination:
         page = self.validate_page_number(request.query_params.get("page"), 1)

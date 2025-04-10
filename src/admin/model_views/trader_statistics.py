@@ -59,11 +59,11 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
             f"""<a href="{URLPath(f'''/admin/trader-statistic-orm/list?trader_id={a.trader_id}''')}">{a.trader}</a>"""
         ),
         TraderStatisticOrm.gain: lambda a, _: Markup(f"{round(a.gain, 2)} % {render_degrees(a.gain_degrees)}"),
-        TraderStatisticOrm.trade_volume: lambda a, _: Markup(f"{format_sum(a.trade_volume)} ₽ {render_degrees(a.trade_volume_degrees)}"),
-        TraderStatisticOrm.stock_balance: lambda a, _: Markup(f"{format_sum(a.stock_balance)} ₽ {render_degrees(a.stock_balance_degrees)}"),
-        TraderStatisticOrm.cash_balance: lambda a, _: Markup(f"{format_sum(a.cash_balance)} ₽ {render_degrees(a.cash_balance_degrees)}"),
-        TraderStatisticOrm.income: lambda a, _: Markup(f"{format_sum(a.income)} ₽ {render_degrees(a.income_degrees)}"),
-        TraderStatisticOrm.yield_: lambda a, _: Markup(f"{round(a.yield_, 2)} {render_degrees(a.yield_degrees)}"),
+        TraderStatisticOrm.trade_volume: lambda a, _: Markup(f"{format_sum(a.trade_volume)} {render_degrees(a.trade_volume_degrees)}"),
+        TraderStatisticOrm.stock_balance: lambda a, _: Markup(f"{format_sum(a.stock_balance)} {render_degrees(a.stock_balance_degrees)}"),
+        TraderStatisticOrm.cash_balance: lambda a, _: Markup(f"{format_sum(a.cash_balance)} {render_degrees(a.cash_balance_degrees)}"),
+        TraderStatisticOrm.income: lambda a, _: Markup(f"{format_sum(a.income)} {render_degrees(a.income_degrees)}"),
+        TraderStatisticOrm.yield_: lambda a, _: f"{round(a.yield_, 2)} %",
         TraderStatisticOrm.deals: lambda a, _: Markup(
             f"""<a href="{URLPath(f'''/admin/deal-orm/list?trader_id={a.trader_id}&start_date={a.start_date.strftime("%d.%m.%Y")}&end_date={a.end_date.strftime("%d.%m.%Y")}''')}">{a.deals} {render_degrees(a.deals_degrees)}</a>"""
         ),
@@ -75,9 +75,9 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
     column_default_sort = ("end_date", "desc")
 
     page_size = 100
-    
+
     list_template = "sqladmin/list-traders-statistics.html"
-    
+
     column_labels = {
         "trader": "Трейдер",
         "cash_balance": "Баланс",
@@ -90,12 +90,27 @@ class TraderStatisticsAdmin(BaseModelView, model=TraderStatisticOrm):
         "gain": "Успех",
         "tickers": "Тикеры",
     }
+
+    diapazon_filter_fields = [
+        TraderStatisticOrm.stock_balance,
+        TraderStatisticOrm.deals,
+        TraderStatisticOrm.trade_volume,
+        TraderStatisticOrm.income,
+        TraderStatisticOrm.yield_,
+        TraderStatisticOrm.gain,
+        TraderStatisticOrm.tickers,
+    ]
     
     def filters_from_request(self, request: Request) -> Select:
+        filters = super().filters_from_request(request)
         trader_id = request.query_params.get("trader_id")
         period = request.query_params.get("period", StatisticPeriodEnum.week)
+        search = request.query_params.get("search", None)
 
-        filters = and_(TraderStatisticOrm.period==period)
+        filters &= and_(TraderStatisticOrm.period==period)
+
+        if search:
+            filters &= and_(TraderOrm.username==search)
 
         if trader_id:
             filters &= and_(TraderStatisticOrm.trader_id==int(trader_id))

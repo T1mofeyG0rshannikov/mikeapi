@@ -1,6 +1,7 @@
+from datetime import datetime
 from sqlalchemy import select, and_, func
 
-from src.db.models.models import DealOrm, TickerOrm
+from src.db.models.models import DealOrm, TickerOrm, TickerPriceOrm
 from src.repositories.base_reposiotory import BaseRepository
 
 
@@ -33,3 +34,17 @@ class TickerRepository(BaseRepository):
     async def update(self, ticker: TickerOrm) -> None:
         await self.db.refresh(ticker)
         await self.db.commit()
+
+    async def create_ticker_price(self, ticker_id: int, price: int, date: datetime) -> TickerPriceOrm:
+        ticker_price = TickerPriceOrm(
+            price=price,
+            date=date,
+            ticker_id=ticker_id
+        )
+        self.db.add(ticker_price)
+        await self.db.commit()
+        return ticker_price
+    
+    async def get_ticker_price(self, date: datetime) -> float:
+        price = await self.db.execute(select(TickerPriceOrm).where(TickerPriceOrm.date==date).join(TickerOrm))
+        return price.scalars().all()

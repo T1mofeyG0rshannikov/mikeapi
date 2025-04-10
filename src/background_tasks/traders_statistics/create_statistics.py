@@ -39,7 +39,7 @@ async def create_statistics(
             cash_balance=cash_balance + last_statistics.cash_balance,
             cash_balance_degrees=cash_balance,
             stock_balance=stock_balance,
-            stock_balance_degrees=stock_balance - last_statistics.cash_balance,
+            stock_balance_degrees=stock_balance - last_statistics.stock_balance,
             active_lots=active_lots,
             active_lots_degrees=active_lots - last_statistics.active_lots,
             deals=deals,

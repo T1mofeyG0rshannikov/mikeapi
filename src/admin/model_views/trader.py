@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import (
-    Any,
+    Any
 )
 
 import pytz
@@ -24,6 +24,7 @@ from starlette.responses import RedirectResponse
 from src.admin.model_views.base import BaseModelView
 from src.entites.trader import TraderWatch
 from src.db.models.models import TraderOrm, TradersBuffer
+
 
 TRADER_BADGE_ICONS = {
     "Верифицирован": "verified",
@@ -263,30 +264,25 @@ class TraderAdmin(BaseModelView, model=TraderOrm):
 
     column_sortable_list = ["portfolio", "trades", "profit", "subscribers", "subscribes", "count", "last_update"]
     
+    diapazon_filter_fields = [
+        TraderOrm.trades,
+        TraderOrm.profit,
+        TraderOrm.count,
+        TraderOrm.subscribes,
+        TraderOrm.subscribers
+    ]
+
     def filters_from_request(self, request: Request):
         status = request.query_params.get("status")
         portfolio = request.query_params.get("portfolio")
-        deals_l = request.query_params.get("deals_l")
-        deals_r = request.query_params.get("deals_r")
-        profit_l = request.query_params.get("profit_l")
-        profit_r = request.query_params.get("profit_r")
         watch = request.query_params.get("watch")
-
-        count_l = request.query_params.get("count_l")
-        count_r = request.query_params.get("count_r")
-
-        subscribes_l = request.query_params.get("subscribers_l")
-        subscribes_r = request.query_params.get("subscribers_r")
-
-        subscribers_l = request.query_params.get("subscribes_l")
-        subscribers_r = request.query_params.get("subscribes_r")
 
         badge = request.query_params.get("badge")
 
         usernames = [username.lower().strip() for username in request.query_params.get("search", "").split(",")]
         usernames = list(filter(lambda x: x, usernames))
 
-        filters = and_()
+        filters = super().filters_from_request()
         
         if usernames:
             filters &= and_(func.lower(TraderOrm.username).in_(usernames))
@@ -294,28 +290,8 @@ class TraderAdmin(BaseModelView, model=TraderOrm):
         if badge:
             filters &= and_(TraderOrm.badges.contains([badge]))
 
-        if subscribes_l:
-            filters &= and_(int(subscribes_l) <= TraderOrm.subscribes)
-        if subscribes_r:
-            filters &= and_(TraderOrm.subscribes <= int(subscribes_r))
-
-        if subscribers_l:
-            filters &= and_(int(subscribers_l) <= TraderOrm.subscribers)
-        if subscribers_r:
-            filters &= and_(TraderOrm.subscribers <= int(subscribers_r))
-
         if watch:
             filters &= and_(TraderOrm.watch == watch)
-
-        if profit_l:
-            filters &= and_(float(profit_l) <= TraderOrm.profit)
-        if profit_r:
-            filters &= and_(TraderOrm.profit <= float(profit_r))
-
-        if deals_l:
-            filters &= and_(int(deals_l) <= TraderOrm.trades)
-        if deals_r:
-            filters &= and_(TraderOrm.trades <= int(deals_r))
 
         if status:
             filters &= and_(TraderOrm.status == status)
@@ -323,9 +299,5 @@ class TraderAdmin(BaseModelView, model=TraderOrm):
         if portfolio:
             filters &= and_(TraderOrm.portfolio == portfolio)
 
-        if count_l:
-            filters &= and_(int(count_l) <= TraderOrm.count)
-        if count_r:
-            filters &= and_(TraderOrm.count <= int(count_r))
-
         return filters
+#333 303

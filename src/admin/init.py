@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from src.admin.model_views.ticker_price import TickerPriceAdmin
 from src.admin.model_views.trader_statistics import TraderStatisticsAdmin
 from src.admin.model_views.failure_deal import FailureDealAdmin
 from src.admin.model_views.server_log import ServerLogAdmin
@@ -32,6 +33,7 @@ def init_admin(app: FastAPI) -> None:
     admin = CustomAdmin(
         app=app, engine=engine, authentication_backend=authentication_backend, templates_dir="src/admin/templates"
     )
+    admin.add_view(TickerPriceAdmin)
     admin.add_view(TraderStatisticsAdmin)
     admin.add_view(LogActivityAdmin)
     admin.add_view(DealAdmin)

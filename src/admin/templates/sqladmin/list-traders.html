@@ -478,20 +478,6 @@
               ['badge', badge]
             ]);
           }
-          function addParams(list){
-            const currentUrl = new URL(window.location.href);
-            for (let param of list){
-              const [key, value] = param;
-              currentUrl.searchParams.set(key, value);
-            }
-            window.location.href = currentUrl.toString();
-          }
-
-          function addParam(key, value){
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set(key, value);
-            window.location.href = currentUrl.toString();
-          }
         </script>
         <tbody>
           {% for row in pagination.rows %}

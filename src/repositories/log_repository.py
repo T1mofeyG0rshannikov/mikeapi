@@ -40,8 +40,10 @@ class DealRepository(BaseRepository):
         self.db.add(log)
         await self.db.commit()
         
-    async def last(self, ticker_slug: str=None) -> DealOrm:
+    async def last(self, ticker_slug: str=None, date: datetime = None) -> DealOrm:
         filters = and_()
+        if date:
+            filters &= and_(func.date(DealOrm.time)==date)
         if ticker_slug:
             filters &= and_(TickerOrm.slug==ticker_slug)
 

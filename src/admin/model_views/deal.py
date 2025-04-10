@@ -3,7 +3,7 @@ import pytz
 from fastapi.requests import Request
 
 from starlette.requests import Request
-from src.background_tasks.traders_statistics import get_selected_ticker_types
+from src.background_tasks.traders_statistics.traders_statistics import get_selected_ticker_types
 from src.admin.model_views.ticker import get_ticker_type_slug
 from src.db.database import Session
 from src.admin.model_views.base import DEGREES_COLORS, BaseModelView, format_sum, render_profit
@@ -209,7 +209,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
                         "%d.%m.%Y %H:%M:%S"
                     )
                     row.end_deal.time_f = row.end_deal.time.astimezone(pytz.timezone("Europe/Moscow")).strftime("%d.%m.%Y %H:%M:%S")
-                row.ticker_lot = row.ticker.lot if row.ticker.lot else 1
+                #row.ticker_lot = row.ticker.lot if row.ticker.lot else 1
                 row.summ = format_sum(row.price * row.ticker_lot)
 
         pagination = Pagination(

@@ -135,9 +135,9 @@ class DealOrm(Model):
     end_deal_id = Column(Integer, ForeignKey("log.id"), nullable=True, index=True)
     end_deal = relationship("DealOrm", remote_side=[id], backref="subordinates")
 
-    #__table_args__ = (
-    #   Index('ix_traders_username_lower', func.lower(username)), # Индекс на lower(username)
-    #)
+    @property
+    def ticker_lot(self):
+        return self.ticker.lot if self.ticker.lot else 1
 
     @hybrid_property
     def ticker_lot_label(self) -> int:
@@ -213,6 +213,8 @@ class TickerOrm(Model):
     last_trade_price = Column(Float, default=0)
 
     end = Column(Date, nullable=True)
+
+    prices = relationship("TickerPriceOrm", back_populates="ticker")
 
     types = TICKER_TYPES
 
@@ -395,3 +397,13 @@ class TraderStatisticOrm(Model):
     @property
     def period_obj(self) -> StatisticPeriod:
         return StatisticPeriod(self.period)
+
+
+class TickerPriceOrm(Model):
+    __tablename__ = "ticker_prices"
+    id = Column(Integer, index=True, primary_key=True)
+
+    ticker_id = Column(Integer, ForeignKey("tickers.id"))
+    ticker = relationship(TickerOrm, back_populates="prices")
+    date = Column(Date)
+    price = Column(Float)

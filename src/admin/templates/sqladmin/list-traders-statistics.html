@@ -69,35 +69,13 @@
             {% endfor %}
           </div>
           {% endif %}
-
-          <div style="min-width: 130px;">
-            <select onchange="selectPeriod(event)">
-              {% for period in model_view.model.periods %}
-                <option value="{{ period }}" {% if request.query_params.get("period") == period or not request.query_params.get("period") and period=="7 дней" %}selected{% endif %}>{{ period }}</option>
-              {% endfor %}
-              </select>
-          </div>
           </div>
 
           <script>
-
-            function addParams(list){
-              const currentUrl = new URL(window.location.href);
-              for (let param of list){
-                const [key, value] = param;
-                currentUrl.searchParams.set(key, value);
-              }
-              window.location.href = currentUrl.toString();
-            }
             function selectPeriod(event){
               event.preventDefault();
               console.log(event.target.value)
               addParam("period", event.target.value);
-            }
-            function addParam(key, value){
-              const currentUrl = new URL(window.location.href);
-              currentUrl.searchParams.set(key, value);
-              window.location.href = currentUrl.toString();
             }
           </script>
         </div>
@@ -115,6 +93,75 @@
         {% endif %}
       </div>
     </div>
+
+    {% if not request.query_params.get("trader_id", None) %}
+      <div class="card-body border-bottom py-3 search-container">
+        <input placeholder="usernames..." type="text" id="search-usernames" value="{{ request.query_params.get('search', '')}}">
+        <button class="btn btn-primary" onclick="search()">поиск</button>
+      </div>
+
+      <script>
+        function search(){
+          const searchString = document.getElementById("search-usernames").value;
+          if (searchString == undefined){
+            addParam('search', '');
+          }
+          else{
+            addParam('search', searchString);
+          }
+        }
+      </script>
+
+      <div class="card-body border-bottom py-3 filter-container">
+        <div class="ms-3 d-inline-block dropdown">
+          <div class="searchable-container">
+            Период
+            <div>
+              <select id="period">
+                {% for period in model_view.model.periods %}
+                  <option value="{{ period }}" {% if request.query_params.get("period") == period or not request.query_params.get("period") and period=="7 дней" %}selected{% endif %}>{{ period }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        {% for name in model_view._filter_diapazon_list %}
+        <div class="searchable-container">
+          {{ model_view._column_labels.get(name, name) }}
+          <div>
+            <input style="width: 50px;" name="{{ name }}_l" id="{{ name }}_l" value="{{ request.query_params.get('%s_l' | format(name), '') }}"/>
+            <input style="width: 50px;" name="{{ name }}_r" id="{{ name }}_r" value="{{ request.query_params.get('%s_r' | format(name), '') }}"/>
+          </div>
+        </div>
+        {% endfor %}
+
+        <button class="btn btn-primary" onclick="filter()">фильтр</button>
+      </div>
+
+      <script>
+        function filter(){
+          const period = document.getElementById("period").value;
+          const filters = [['period', period]];
+          document.querySelector(".filter-container").querySelectorAll(".searchable-container").forEach(field =>
+            {
+              const f_l = field.querySelectorAll("input")[0];
+              const f_r = field.querySelectorAll("input")[1];
+              if (f_l){
+                console.log(f_l.id)
+                console.log(f_r.id)
+                console.log()
+                filters.push([f_l.id, f_l.value])
+                filters.push([f_r.id, f_r.value])
+              }
+            }
+          )
+
+          addParams(filters);
+        }
+      </script>
+    {% endif %}
+
     <div class="table-responsive">
       <table class="table card-table table-vcenter text-nowrap">
         <thead>
