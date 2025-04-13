@@ -1,7 +1,7 @@
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 
-from src.dependencies.container import Container
+from src.dependencies.repos_container import ReposContainer
 from src.auth.jwt_processor import JwtProcessor
 from src.password_hasher import PasswordHasher
 from src.admin.config import AdminConfig
@@ -21,7 +21,7 @@ class AdminAuth(AuthenticationBackend):
         self.config = config
 
     async def login(self, request: Request) -> LoginResponse:
-        user_repository = await Container.user_repository()
+        user_repository = await ReposContainer.user_repository()
         if self.config.debug:
             LoginResponse(ok=True)
 

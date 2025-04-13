@@ -1,4 +1,5 @@
 from dependency_injector import providers, containers
+from src.background_tasks.trades_activity import DealsActivity
 from src.background_tasks.traders_statistics.traders_statistics import CreateTraderStatistics
 from src.background_tasks.tickers_prices import GetTickersPrices
 from src.dependencies.repos_container import ReposContainer
@@ -62,4 +63,7 @@ class Container(containers.Container):
         deal_repository=ReposContainer.log_repository,
         settings_repository=ReposContainer.settings_repository,
         ticker_repositpry=ReposContainer.ticker_repository
+    )
+    deals_activity = providers.Factory(DealsActivity,
+        deal_repository=ReposContainer.log_repository
     )

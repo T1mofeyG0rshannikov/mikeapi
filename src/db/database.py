@@ -17,7 +17,7 @@ engine = create_async_engine(
 
 sync_engine = create_engine(SQLALCHEMY_SYNC_DATABASE_URL)
 
-new_session = async_sessionmaker(engine, expire_on_commit=False)
+new_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 Session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
@@ -36,6 +36,11 @@ async def delete_tables() -> None:
         await conn.run_sync(Model.metadata.drop_all)
 
 
-async def get_db():
+async def db_generator():
     async with new_session() as session:
         yield session
+
+
+async def get_session():
+    async for db in db_generator():
+        yield db

@@ -21,7 +21,7 @@ from src.entites.trader import TraderWatch
 from src.entites.vendor import Device
 from src.exceptions import APIServerError, InvalidCreateLogRequest
 from src.generate_user_code import code_exists, generate_code, get_code_index
-from src.repositories.log_repository import DealRepository
+from src.repositories.deal_repository import DealRepository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.trader_repository import TraderRepository
 from src.schemas.common import APIResponse

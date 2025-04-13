@@ -3,7 +3,7 @@ from src.background_tasks.traders_statistics.get_latest_trades import get_latest
 from src.entites.ticker import TICKER_TYPES
 from src.db.models.models import DealOrm, SettingsOrm
 from src.repositories.settings_repository import SettingsRepository
-from src.repositories.log_repository import DealRepository
+from src.repositories.deal_repository import DealRepository
 from src.entites.trader import StatisticPeriod, StatisticPeriodEnum, TraderWatch
 from src.repositories.trader_repository import TraderRepository
 from src.entites.deal import DealOperations
@@ -71,6 +71,10 @@ class CreateTraderStatistics:
             await self.repository.delete_statistics(period=period.view)
 
         last_ticker_deals = await get_latest_trades(yesterday)
+        print("last_ticker_deals")
+        print(yesterday)
+        print(last_ticker_deals)
+        print("last_ticker_deals")
         ticker_slugs = list(last_ticker_deals.keys())
         
         for trader in traders:

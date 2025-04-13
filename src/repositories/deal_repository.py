@@ -1,12 +1,13 @@
 from datetime import datetime
 
-from sqlalchemy import select, and_, func, update, bindparam
+from sqlalchemy import select, and_, func, update
 
-from src.db.models.models import DealOrm, TickerOrm, TraderOrm, UnsuccessLog
+from src.db.models.models import DealOrm, LogActivityOrm, TickerOrm, TraderOrm, UnsuccessLog
 from src.repositories.base_reposiotory import BaseRepository
 from src.entites.deal import DealOperations
 from sqlalchemy.orm import joinedload
 import pytz
+
 
 class DealRepository(BaseRepository):
     async def create(
@@ -40,12 +41,12 @@ class DealRepository(BaseRepository):
         self.db.add(log)
         await self.db.commit()
         
-    async def last(self, ticker_slug: str=None, date: datetime = None) -> DealOrm:
+    async def last(self, ticker_id: int=None, date: datetime = None) -> DealOrm:
         filters = and_()
         if date:
             filters &= and_(func.date(DealOrm.time)==date)
-        if ticker_slug:
-            filters &= and_(TickerOrm.slug==ticker_slug)
+        if ticker_id:
+            filters &= and_(DealOrm.ticker_id==ticker_id)
 
         trade = await self.db.execute(select(DealOrm).join(TickerOrm).where(filters).order_by(DealOrm.time.desc()).limit(1))
         return trade.scalar()
@@ -55,7 +56,8 @@ class DealRepository(BaseRepository):
         trader_id: int = None, 
         operation: DealOperations = None, 
         start_time: datetime = None,
-        ticker_types: list[str] = None
+        ticker_types: list[str] = None,
+        ticker_id: int = None
     ) -> list[DealOrm]:
         filters = and_()
         if trader_id:
@@ -66,6 +68,8 @@ class DealRepository(BaseRepository):
             filters &= and_(DealOrm.time >= start_time)
         if ticker_types:
             filters &= and_(TickerOrm.type.in_(ticker_types))
+        if ticker_id:
+            filters &= and_(DealOrm.ticker_id==ticker_id)
         deals = await self.db.execute(select(DealOrm).join(TickerOrm).where(filters).options(joinedload(DealOrm.ticker)).order_by(DealOrm.time))
         return deals.scalars().all()
 
@@ -90,22 +94,17 @@ class DealRepository(BaseRepository):
 
         count = await self.db.execute(select(func.count(DealOrm.id)).where(filters))
         return count.scalar()
-    
-    async def update(self, deal: DealOrm) -> None:
-        await self.db.commit()
-        await self.db.refresh(deal)
 
     async def all(self):
         result = await self.db.execute(select(DealOrm))
         return result.scalars().all()
     
-    async def update_mappings(self, mappings: dict) -> None:
-        '''await self.db.execute(
-            update(DealOrm).where(DealOrm.id == bindparam('id')).values(
-                profit=bindparam('profit'), 
-                end_deal=bindparam('end_deal'), 
-                closed=bindparam('closed'), 
-                yield_=bindparam('yield_')
-            ), mappings, synchronize_session=None)'''
-        await self.db.run_sync(lambda db: db.bulk_update_mappings(DealOrm, mappings=mappings))
+    async def get_activity(self, date: datetime) -> LogActivityOrm:
+        activity = await self.db.execute(select(LogActivityOrm).where(LogActivityOrm.date == date).limit(1))
+        return activity.scalar()
+    
+    async def create_activity(self, date: datetime) -> None:
+        activity = LogActivityOrm(date=date)
+        self.db.add(activity)
         await self.db.commit()
+        return activity

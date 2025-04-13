@@ -15,6 +15,9 @@ from sqlalchemy import (
 
 
 class BaseModelView(ModelView):
+    diapazon_filter_fields = []
+    page_size = 100
+
     @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
     async def delete_all_action(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
@@ -24,6 +27,7 @@ class BaseModelView(ModelView):
 
     def filters_from_request(self, request: Request):
         filters = and_()
+
         for f in self.diapazon_filter_fields:
             diapazon_field_name = str(f).split(".")[1]
             print(diapazon_field_name)

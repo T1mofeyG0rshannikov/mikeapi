@@ -1,6 +1,6 @@
 from fastapi import Request
 
-from src.repositories.log_repository import DealRepository
+from src.repositories.deal_repository import DealRepository
 
 
 class CreateFailureLog:

@@ -7,12 +7,12 @@ from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.scheduler_repository import SchedulerRepository
 from src.repositories.vendor_repository import VendorRepository
-from src.repositories.log_repository import DealRepository
-from src.db.database import get_db
+from src.repositories.deal_repository import DealRepository
+from src.db.database import db_generator
 
 
 class ReposContainer(containers.Container):
-    db = providers.Resource(get_db)
+    db = providers.Resource(db_generator)
     log_repository = providers.Factory(DealRepository, db=db)
     vendor_repository = providers.Factory(VendorRepository, db=db)
     ticker_repository = providers.Factory(TickerRepository, db=db)

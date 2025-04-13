@@ -4,7 +4,7 @@ import pytz
 
 from src.repositories.ticker_repository import TickerRepository
 from src.repositories.trader_repository import TraderRepository
-from src.repositories.log_repository import DealRepository
+from src.repositories.deal_repository import DealRepository
 
 
 class TickersActivity:
@@ -21,7 +21,7 @@ class TickersActivity:
     async def __call__(self) -> None:
         tickers = await self.ticker_repository.all()
         for ticker in tickers:
-            last_deal = await self.deal_repository.last(ticker_slug=ticker.slug)
+            last_deal = await self.deal_repository.last(ticker_id=ticker.id)
 
             current_time = datetime.now(pytz.timezone("Europe/Moscow")).astimezone(pytz.utc)
 

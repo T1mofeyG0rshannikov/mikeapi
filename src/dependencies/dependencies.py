@@ -3,13 +3,13 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.db.database import db_generator
 from src.db.models.models import UrlEnum
 from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ticker_repository import TickerRepository
-from src.db.database import get_db
 from src.entites.vendor import Device
 from src.exceptions import InvalidAuthTokenError, UrlNotFound, VendorNotFoundError
-from src.repositories.log_repository import DealRepository
+from src.repositories.deal_repository import DealRepository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.trader_repository import TraderRepository
 from src.repositories.user_repository import UserRepository
@@ -17,31 +17,31 @@ from src.repositories.vendor_repository import VendorRepository
 from src.schemas.common import AppRequest
 
 
-def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
+def get_user_repository(db: AsyncSession = Depends(db_generator)) -> UserRepository:
     return UserRepository(db)
 
 
-def get_ticker_repository(db: AsyncSession = Depends(get_db)) -> TickerRepository:
+def get_ticker_repository(db: AsyncSession = Depends(db_generator)) -> TickerRepository:
     return TickerRepository(db)
 
 
-def get_vendor_repository(db: AsyncSession = Depends(get_db)) -> VendorRepository:
+def get_vendor_repository(db: AsyncSession = Depends(db_generator)) -> VendorRepository:
     return VendorRepository(db)
 
 
-def get_log_repository(db: AsyncSession = Depends(get_db)) -> DealRepository:
+def get_log_repository(db: AsyncSession = Depends(db_generator)) -> DealRepository:
     return DealRepository(db)
 
 
-def get_trader_repository(db: AsyncSession = Depends(get_db)) -> TraderRepository:
+def get_trader_repository(db: AsyncSession = Depends(db_generator)) -> TraderRepository:
     return TraderRepository(db)
 
 
-def get_ping_repository(db: Annotated[AsyncSession, Depends(get_db)]) -> PingRepository:
+def get_ping_repository(db: Annotated[AsyncSession, Depends(db_generator)]) -> PingRepository:
     return PingRepository(db)
 
 
-def get_server_log_repository(db: Annotated[AsyncSession, Depends(get_db)]) -> ServerLogRepository:
+def get_server_log_repository(db: Annotated[AsyncSession, Depends(db_generator)]) -> ServerLogRepository:
     return ServerLogRepository(db)
 
 

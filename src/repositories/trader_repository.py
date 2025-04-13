@@ -24,11 +24,6 @@ class TraderRepository(BaseRepository):
         self.db.add(trader)
         await self.db.commit()
         return trader
-
-    async def update(self, trader: TraderOrm) -> TraderOrm:
-        await self.db.commit()
-        await self.db.refresh(trader)
-        return trader
     
     async def all(self) -> list[TraderOrm]:
         traders = await self.db.execute(select(TraderOrm))

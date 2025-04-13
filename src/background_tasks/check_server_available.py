@@ -7,7 +7,7 @@ from src.alerts_service.service import AlertsService
 from src.entites.contacts import ContactChannel
 from src.repositories.vendor_repository import VendorRepository
 from src.entites.alert import AlertChannels
-from src.repositories.log_repository import DealRepository
+from src.repositories.deal_repository import DealRepository
 from src.repositories.scheduler_repository import SchedulerRepository
 from datetime import datetime
 

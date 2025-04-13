@@ -9,12 +9,12 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
+from src.db.database import db_generator
 from src.dependencies.base_dependencies import get_jwt_processor
 from src.auth.jwt_processor import JwtProcessor
 from src.celery import create_traders_task, create_usernames_task
 from src.db.models.models import TradersBuffer, UserOrm
 from src.dependencies.dependencies import (
-    get_db,
     get_user_repository,
 )
 from src.entites.trader import LoadTraderAction, TraderWatch
@@ -115,7 +115,7 @@ async def add_subscribes(
 @router.delete("/clear-buffer/")
 @admin_required
 async def clear_buffer(
-    user: Annotated[UserOrm, Depends(get_user)], request: Request, db: Annotated[AsyncSession, Depends(get_db)]
+    user: Annotated[UserOrm, Depends(get_user)], request: Request, db: Annotated[AsyncSession, Depends(db_generator)]
 ):
     await db.execute(delete(TradersBuffer))
     await db.commit()

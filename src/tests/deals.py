@@ -1,4 +1,4 @@
-from src.repositories.log_repository import DealRepository
+from repositories.deal_repository import DealRepository
 from src.dependencies.container import Container
 import datetime
 from time import time

@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import select, and_, func
-
+from sqlalchemy.orm import selectinload
 from src.db.models.models import DealOrm, TickerOrm, TickerPriceOrm
 from src.repositories.base_reposiotory import BaseRepository
 
@@ -30,11 +30,14 @@ class TickerRepository(BaseRepository):
 
         result = await self.db.execute(query.where(filters))
         return result.scalar_one()
-    
-    async def update(self, ticker: TickerOrm) -> None:
-        await self.db.refresh(ticker)
-        await self.db.commit()
 
+    async def price_exist(self, ticker_id, date) -> bool:
+        price = await self.db.execute(select(TickerPriceOrm).where(TickerPriceOrm.date==date, TickerPriceOrm.ticker_id==ticker_id).limit(1))
+        price = price.scalar()
+        if price:
+            return True
+        return False
+    
     async def create_ticker_price(self, ticker_id: int, price: int, date: datetime) -> TickerPriceOrm:
         ticker_price = TickerPriceOrm(
             price=price,
@@ -46,5 +49,5 @@ class TickerRepository(BaseRepository):
         return ticker_price
     
     async def get_ticker_price(self, date: datetime) -> float:
-        price = await self.db.execute(select(TickerPriceOrm).where(TickerPriceOrm.date==date).join(TickerOrm))
+        price = await self.db.execute(select(TickerPriceOrm).where(TickerPriceOrm.date==date).join(TickerOrm).options(selectinload(TickerPriceOrm.ticker)))
         return price.scalars().all()
