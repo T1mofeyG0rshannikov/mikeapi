@@ -3,18 +3,14 @@ class Error(Exception):
         self.message = message
         super().__init__(message, *args)
 
-
 class InvalidAuthTokenError(Error):
     pass
-
 
 class APIServerError(Error):
     pass
 
-
 class VendorNotFoundError(Error):
     pass
-
 
 class NotPermittedError(Error):
     pass
@@ -23,4 +19,7 @@ class InvalidCreateLogRequest(Error):
     pass
 
 class UrlNotFound(Error):
+    pass
+
+class ObjectNotFound(Error):
     pass

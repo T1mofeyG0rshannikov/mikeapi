@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from src.dependencies.container import Container
+from src.dependencies.repos_container import ReposContainer
 from src.exceptions import (
     APIServerError,
     InvalidAuthTokenError,
@@ -13,7 +13,7 @@ from src.usecases.create_failure_log import CreateFailureLog
 
 
 async def create_failure_log(request: Request) -> None:
-    log_repository = await Container.log_repository()
+    log_repository = await ReposContainer.deal_repository()
     usecase = CreateFailureLog(log_repository)
     await usecase(request)
 
@@ -38,7 +38,7 @@ async def not_permitted_exc_handler(request: Request, exc: NotPermittedError) ->
 
 async def invalid_create_log_request_exc_handler(request: Request, exc: InvalidCreateLogRequest) -> JSONResponse:
     await create_failure_log(request)
-    return JSONResponse(status_code=200, content={"status": "fail"})
+    return JSONResponse(status_code=200, content={"status": "fail", "details": exc.message})
 
 
 def init_exc_handlers(app: FastAPI) -> None:

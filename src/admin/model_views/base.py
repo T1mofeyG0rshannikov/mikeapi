@@ -30,7 +30,6 @@ class BaseModelView(ModelView):
 
         for f in self.diapazon_filter_fields:
             diapazon_field_name = str(f).split(".")[1]
-            print(diapazon_field_name)
             diapazon_field_request_l = request.query_params.get(f"{diapazon_field_name}_l", None)
             diapazon_field_request_r = request.query_params.get(f"{diapazon_field_name}_r", None)
 

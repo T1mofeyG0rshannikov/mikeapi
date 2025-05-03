@@ -36,15 +36,17 @@ class UrlEnum(str, enum.Enum):
     failure = "Ошибка"
 
 
-class VendorOrm(Model):
+class DeviceOrm(Model):
     __tablename__ = "vendors"
 
     id = Column(Integer, primary_key=True, index=True)
     app_id = Column(String)
     auth_token = Column(String)
-    logs = relationship("DealOrm", back_populates="app")
+    logs = relationship("DealOrm", back_populates="app", foreign_keys='[DealOrm.app_id]')
     traders = relationship("TraderOrm", back_populates="app")
     pings = relationship("PingOrm", back_populates="app")
+    packages = relationship("PackageOrm", back_populates="device")
+    adopted_deals = relationship("DealOrm", back_populates="adopted_device", foreign_keys='[DealOrm.adopted_device_id]')
 
     def __str__(self) -> str:
         return self.app_id
@@ -94,7 +96,7 @@ class TraderOrm(Model):
     count = Column(Integer, default=0)
     logs = relationship("DealOrm", back_populates="user")
     app_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
-    app = relationship(VendorOrm, back_populates="traders")
+    app = relationship(DeviceOrm, back_populates="traders")
     last_update = Column(TIMESTAMP(timezone=True), nullable=True)
     scanned = Column(Boolean, default=False)
 
@@ -115,7 +117,7 @@ class DealOrm(Model):
 
     id = Column(Integer, primary_key=True, index=True)
     app_id = Column(Integer, ForeignKey("vendors.id"))
-    app = relationship(VendorOrm, back_populates="logs")
+    app = relationship(DeviceOrm, back_populates="logs", foreign_keys=[app_id])
     time = Column(TIMESTAMP(timezone=True), index=True)
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))
     user_id = Column(Integer, ForeignKey("traders.id", ondelete="CASCADE"), index=True)
@@ -134,6 +136,10 @@ class DealOrm(Model):
 
     end_deal_id = Column(Integer, ForeignKey("log.id"), nullable=True, index=True)
     end_deal = relationship("DealOrm", remote_side=[id], backref="subordinates")
+
+    adopted = Column(Boolean, nullable=True)
+    adopted_device_id = Column(Integer, ForeignKey('vendors.id'), nullable=True)
+    adopted_device = relationship(DeviceOrm, back_populates='adopted_deals', foreign_keys=[adopted_device_id])
 
     @property
     def ticker_lot(self):
@@ -217,10 +223,11 @@ class TickerOrm(Model):
     prices = relationship("TickerPriceOrm", back_populates="ticker")
 
     types = TICKER_TYPES
+    is_active = Column(Boolean, server_default=expression.true())
 
     @hybrid_property
     def rare(self, db=Session()) -> bool:
-        settings = db.execute(select(SettingsOrm)).scalars().first()
+        settings = db.execute(select(SettingsOrm).limit(1)).scalar()
         if not settings:
             return False
 
@@ -228,7 +235,7 @@ class TickerOrm(Model):
 
     @rare.expression
     def rare(self, db=Session()):
-        settings = db.execute(select(SettingsOrm)).scalars().first()
+        settings = db.execute(select(SettingsOrm).limit(1)).scalar()
         if not settings:
             return False
 
@@ -275,7 +282,7 @@ class PingOrm(Model):
     id = Column(Integer, index=True, primary_key=True)
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))
     app_id = Column(Integer, ForeignKey("vendors.id"))
-    app = relationship(VendorOrm, back_populates="pings")
+    app = relationship(DeviceOrm, back_populates="pings")
 
 
 class TradersBuffer(Model):
@@ -407,3 +414,12 @@ class TickerPriceOrm(Model):
     ticker = relationship(TickerOrm, back_populates="prices")
     date = Column(Date)
     price = Column(Float)
+
+
+class PackageOrm(Model):
+    __tablename__ = "packages"
+    id = Column(Integer, index=True, primary_key=True)
+
+    signal_ids = Column(ARRAY(Integer))
+    device_id = Column(Integer, ForeignKey('vendors.id'))
+    device = relationship(DeviceOrm, back_populates='packages')

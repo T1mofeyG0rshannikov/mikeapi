@@ -4,8 +4,8 @@ from time import time
 
 from pydantic import BaseModel
 
-from src.repositories.vendor_repository import VendorRepository
-from src.db.models.models import TraderOrm, VendorOrm
+from src.repositories.vendor_repository import DeviceRepository
+from src.db.models.models import TraderOrm, DeviceOrm
 from src.entites.trader import LoadTraderAction, TraderStatus, TraderWatch
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
@@ -39,9 +39,9 @@ def valid_username(username: str) -> bool:
 
 
 class AddUsernames:
-    def __init__(self, repository: TraderRepository, vendor_repository: VendorRepository) -> None:
+    def __init__(self, repository: TraderRepository, device_repository: DeviceRepository) -> None:
         self.traders_repository = repository
-        self.vendor_repository = vendor_repository
+        self.device_repository = device_repository
 
     def count(self, users, user) -> int:
         return bisect_right(users, user) - bisect_left(users, user)
@@ -50,7 +50,7 @@ class AddUsernames:
         self,
         users: list[CreateUsernameDTO],
         watch: str = TraderWatch.pre,
-        app: VendorOrm | None = None,
+        app: DeviceOrm | None = None,
         action: str | None = None,
     ) -> None:
         start = time()
@@ -59,7 +59,7 @@ class AddUsernames:
         unique_users = sorted(set(users), key=lambda t: t.username)
         unique_user_names = [user.username for user in unique_users]
         
-        app = await self.vendor_repository.first()
+        app = await self.device_repository.first()
 
         traders = await self.traders_repository.filter_by_usernames(unique_user_names)
 

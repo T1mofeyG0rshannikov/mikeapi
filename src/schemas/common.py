@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class AppRequest(BaseModel):
+class DeviceRequest(BaseModel):
     app_id: str
     auth_token: str
 

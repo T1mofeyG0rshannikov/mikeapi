@@ -27,7 +27,7 @@ class Container(containers.Container):
     redis = providers.Singleton(get_redis)
     alerts_server = providers.Singleton(AlertsService, config=alerts_config, redis=redis)
     check_server_activity = providers.Factory(CheckServerActivity, 
-        repository=ReposContainer.log_repository,
+        repository=ReposContainer.deal_repository,
         scheduler_repository=ReposContainer.scheduler_repository,
         vendor_repository=ReposContainer.vendor_repository,
         telegram_sender=telegram_sender,
@@ -45,7 +45,8 @@ class Container(containers.Container):
     trader_statistics = providers.Factory(CreateTraderStatistics,
         repository=ReposContainer.trader_repository,
         settings_repository=ReposContainer.settings_repository,
-        deal_repository=ReposContainer.log_repository 
+        deal_repository=ReposContainer.deal_repository,
+        tickers_repository=ReposContainer.ticker_repository
     )
     add_usernames = providers.Factory(AddUsernames,
         repository=ReposContainer.trader_repository, 
@@ -56,14 +57,14 @@ class Container(containers.Container):
     )
     tickers_activity = providers.Factory(TickersActivity,
         trader_repository=ReposContainer.trader_repository,
-        deal_repository=ReposContainer.log_repository,
+        deal_repository=ReposContainer.deal_repository,
         ticker_repository=ReposContainer.ticker_repository
     )
     ticker_prices = providers.Factory(GetTickersPrices,
-        deal_repository=ReposContainer.log_repository,
+        deal_repository=ReposContainer.deal_repository,
         settings_repository=ReposContainer.settings_repository,
         ticker_repositpry=ReposContainer.ticker_repository
     )
     deals_activity = providers.Factory(DealsActivity,
-        deal_repository=ReposContainer.log_repository
+        deal_repository=ReposContainer.deal_repository
     )

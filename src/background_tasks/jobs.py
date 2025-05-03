@@ -8,7 +8,8 @@ async def trader_activity() -> None:
         usecase = Container.trader_statistics(
             repository=ReposContainer.trader_repository(db=db),
             settings_repository=ReposContainer.settings_repository(db=db),
-            deal_repository=ReposContainer.log_repository(db=db) 
+            deal_repository=ReposContainer.log_repository(db=db),
+            tickers_repository=ReposContainer.ticker_repository(db=db)
         )
         await usecase()
 
@@ -16,7 +17,7 @@ async def trader_activity() -> None:
 async def check_server() -> None:
     async for db in db_generator():
         usecase = Container.check_server(
-            repository=ReposContainer.server_log_repository(db)
+            repository=ReposContainer.server_log_repository(db=db)
         )
         await usecase()
 

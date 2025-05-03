@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, delete, and_
+from sqlalchemy import func, select, delete, and_, update
 
 from src.entites.trader import StatisticPeriodEnum, TraderWatch
 from src.db.models.models import DealOrm, TraderOrm, TraderStatisticOrm
@@ -130,3 +130,7 @@ class TraderRepository(BaseRepository):
 
             count = await self.db.execute(select(func.count(TraderOrm.id)).where(TraderOrm.id.in_(subquery)))
             return count.scalar()
+        
+    async def update_many(self, ids: list[str], watch: TraderWatch) -> None:
+        await self.db.execute(update(TraderOrm).where(TraderOrm.code.in_(ids)).values(watch=watch))
+        await self.db.commit()

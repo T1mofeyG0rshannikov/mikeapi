@@ -5,7 +5,7 @@ from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ping_repository import PingRepository
 from src.alerts_service.service import AlertsService
 from src.entites.contacts import ContactChannel
-from src.repositories.vendor_repository import VendorRepository
+from src.repositories.vendor_repository import DeviceRepository
 from src.entites.alert import AlertChannels
 from src.repositories.deal_repository import DealRepository
 from src.repositories.scheduler_repository import SchedulerRepository
@@ -17,7 +17,7 @@ class CheckServerActivity:
         self, 
         repository: DealRepository, 
         scheduler_repository: SchedulerRepository, 
-        vendor_repository: VendorRepository,
+        device_repository: DeviceRepository,
         telegram_sender: TelegramSender,
         sms_sender: SMSSender,
         alerts_service: AlertsService,
@@ -29,7 +29,7 @@ class CheckServerActivity:
         self.telegram_sender = telegram_sender
         self.repository = repository
         self.scheduler_repository = scheduler_repository
-        self.vendor_repository = vendor_repository
+        self.vendor_repository = device_repository
         self.alerts_service = alerts_service
         self.server_log_repository = server_log_repository
 

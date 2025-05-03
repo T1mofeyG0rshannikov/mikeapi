@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, update
 from sqlalchemy.orm import selectinload
 from src.db.models.models import DealOrm, TickerOrm, TickerPriceOrm
 from src.repositories.base_reposiotory import BaseRepository
@@ -20,7 +20,7 @@ class TickerRepository(BaseRepository):
         await self.db.commit()
 
         return ticker
- 
+
     async def count(self, trader_id: int) -> int:
         query = select(func.count(TickerOrm.id))
         filters = and_()
@@ -51,3 +51,7 @@ class TickerRepository(BaseRepository):
     async def get_ticker_price(self, date: datetime) -> float:
         price = await self.db.execute(select(TickerPriceOrm).where(TickerPriceOrm.date==date).join(TickerOrm).options(selectinload(TickerPriceOrm.ticker)))
         return price.scalars().all()
+    
+    async def update_many(self, slugs: list[str], is_active: bool) -> None:
+        await self.db.execute(update(TickerOrm).where(TickerOrm.slug.in_(slugs)).values(is_active=is_active))
+        await self.db.commit()

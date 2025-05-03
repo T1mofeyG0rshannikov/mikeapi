@@ -21,6 +21,7 @@ def get_ticker_type_slug(ticker_type: str) -> str:
 
 class TickerAdmin(BaseModelView, model=TickerOrm):
     column_list = [
+        TickerOrm.is_active,
         TickerOrm.slug,
         TickerOrm.name,
         TickerOrm.type,
@@ -68,6 +69,7 @@ class TickerAdmin(BaseModelView, model=TickerOrm):
     list_template = "sqladmin/list-tickers.html"
 
     column_labels = {
+        "is_active": "Статус",
         "slug": "Тикер",
         "name": "название",
         "lot": "Лот",

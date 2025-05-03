@@ -38,6 +38,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
         DealOrm.created_at,
         DealOrm.time,
         DealOrm.main_server,
+        DealOrm.adopted
     ]
 
     trader_column_list = [
@@ -104,6 +105,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
         DealOrm.ticker: lambda log, _: Markup(
             f"""<a href="https://www.tbank.ru/invest/{get_ticker_type_slug(log.ticker.type)}/{log.ticker.slug}/" target="_blank">{log.ticker.slug}</a>"""
         ),
+        DealOrm.adopted: lambda log, _: Markup('<i class="fa fa-check text-success"></i>') if (log.adopted) else '',
     }
 
     column_labels = {
@@ -119,7 +121,8 @@ class DealAdmin(BaseModelView, model=DealOrm):
         "profit": "Прибыль",
         "yield_": "Маржа",
         "ticker_lot_label": "Лот",
-        "summ_label": "Сумма"
+        "summ_label": "Сумма",
+        "adopted": "Терминал"
     }
 
     page_size = 100
@@ -155,10 +158,9 @@ class DealAdmin(BaseModelView, model=DealOrm):
         if end_date:
             filters &= and_(DealOrm.time <= datetime.strptime(end_date, "%d.%m.%Y") + timedelta(days=1))
 
-        print(closed, "closed")
         if closed:
             closed = closed == "true"
-            print(closed)
+
             if not closed:
                 filters &= and_(~DealOrm.closed.is_(True), ~DealOrm.subordinates.any())
             else:

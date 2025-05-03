@@ -1,8 +1,6 @@
 from datetime import datetime
-from typing import Annotated
 
 from src.dependencies.decorator import inject_dependencies
-from src.dependencies.repos_container import ReposContainer
 from src.db.models.models import TraderStatisticOrm
 from src.repositories.trader_repository import TraderRepository
 from src.entites.trader import StatisticPeriod
@@ -24,7 +22,7 @@ async def create_statistics(
     yield_: float,
     gain: float,
     tickers: int,
-    repository: Annotated[TraderRepository, ReposContainer.trader_repository],
+    repository: TraderRepository,
     last_statistics: TraderStatisticOrm = None,
 ) -> TraderStatisticOrm:
     date_value = period.date_value(end_date)

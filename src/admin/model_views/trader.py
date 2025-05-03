@@ -164,8 +164,8 @@ class TraderAdmin(BaseModelView, model=TraderOrm):
             request.url.remove_query_params("pks")
             rows = await self._run_query(self.list_query(request).filter(self.filters_from_request(request)))
 
-            buffer = await session.execute(select(TradersBuffer))
-            buffer = buffer.scalars().first()
+            buffer = await session.execute(select(TradersBuffer).limit(1))
+            buffer = buffer.scalar()
             if not buffer:
                 buffer = TradersBuffer(usernames=[])
                 session.add(buffer)
@@ -193,50 +193,42 @@ class TraderAdmin(BaseModelView, model=TraderOrm):
             return RedirectResponse(
                 url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303
             )
+
+    async def _set_status_chosed(self, request: Request, watch: TraderWatch):
+        async with self.session_maker(expire_on_commit=False) as session:
+            pks = [int(i) for i in request.query_params.get("pks", "").split(",")]
+            await session.execute(update(self.model).where(TraderOrm.id.in_(pks)).values(watch=watch))
+            await session.commit()
+            return RedirectResponse(
+                url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303
+            )
+        
+    async def _set_status_filter(self, request: Request, watch: TraderWatch):
+        async with self.session_maker(expire_on_commit=False) as session:
+            query = update(TraderOrm).where(self.filters_from_request(request)).values(watch=watch)
+            await session.execute(query)
+            await session.commit()
+            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303)
             
     @action(name="status_on", label="Статус ON (выбранные)")
     async def status_on(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            pks = [int(i) for i in request.query_params.get("pks", "").split(",")]
-            await session.execute(update(self.model).where(TraderOrm.id.in_(pks)).values(watch=TraderWatch.on))
-            await session.commit()
-            return RedirectResponse(
-                url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303
-            )
+        return await self._set_status_chosed(request, watch=TraderWatch.on)
             
     @action(name="status_off_pks", label="Статус OFF (выбранные)")
     async def status_of_pks(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            pks = [int(i) for i in request.query_params.get("pks", "").split(",")]
-            await session.execute(update(self.model).where(TraderOrm.id.in_(pks)).values(watch=TraderWatch.off))
-            await session.commit()
-            return RedirectResponse(
-                url=f"/admin/{slugify_class_name(self.model.__name__)}/list", status_code=303
-            )
-            
+        return await self._set_status_chosed(request, watch=TraderWatch.off)
+
     @action(name="status_pre", label="Статус PRE (фильтр)")
     async def status_pre(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            query = update(TraderOrm).where(self.filters_from_request(request)).values(watch=TraderWatch.pre)
-            await session.execute(query)
-            await session.commit()
-            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303)
-            
+        return await self._set_status_filter(request, watch=TraderWatch.pre)
+
     @action(name="status_off", label="Статус OFF (фильтр)")
     async def status_off(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            query = update(TraderOrm).where(self.filters_from_request(request)).values(watch=TraderWatch.off)
-            await session.execute(query)
-            await session.commit()
-            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303)
+        return await self._set_status_filter(request, watch=TraderWatch.off)
         
     @action(name="status_raw", label="Статус RAW (фильтр)")
     async def status_raw(self, request: Request):
-        async with self.session_maker(expire_on_commit=False) as session:
-            query = update(TraderOrm).where(self.filters_from_request(request)).values(watch=TraderWatch.raw)
-            await session.execute(query)
-            await session.commit()
-            return RedirectResponse(url=f"/admin/{slugify_class_name(self.model.__name__)}/list?{request.query_params}", status_code=303)
+        return await self._set_status_filter(request, watch=TraderWatch.raw)
 
     column_formatters = {
         TraderOrm.username: lambda trader, _: Markup(
@@ -273,6 +265,8 @@ class TraderAdmin(BaseModelView, model=TraderOrm):
     ]
 
     def filters_from_request(self, request: Request):
+        filters = super().filters_from_request(request)
+
         status = request.query_params.get("status")
         portfolio = request.query_params.get("portfolio")
         watch = request.query_params.get("watch")
@@ -281,8 +275,6 @@ class TraderAdmin(BaseModelView, model=TraderOrm):
 
         usernames = [username.lower().strip() for username in request.query_params.get("search", "").split(",")]
         usernames = list(filter(lambda x: x, usernames))
-
-        filters = super().filters_from_request()
         
         if usernames:
             filters &= and_(func.lower(TraderOrm.username).in_(usernames))

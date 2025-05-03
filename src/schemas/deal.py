@@ -1,14 +1,12 @@
 from datetime import datetime
-from typing import Optional
 
-from pydantic import BaseModel, validator
+from pydantic import validator
 
+from src.schemas.common import DeviceRequest
 from src.exceptions import InvalidCreateLogRequest
 
 
-class CreateLogRequest(BaseModel):
-    app_id: str
-    auth_token: str
+class CreateDealRequest(DeviceRequest):
     time: str | None = None
     text: str | None = "clubpravinvest: купил Т по 100 RUB (11.11.2011)"
     action: str | None = None

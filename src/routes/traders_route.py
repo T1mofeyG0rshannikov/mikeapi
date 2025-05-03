@@ -1,6 +1,4 @@
 import csv
-from collections.abc import Callable
-from functools import wraps
 from io import StringIO
 from typing import Annotated
 
@@ -9,49 +7,17 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
+from src.dependencies.dependencies import DeviceAnnotation, get_trader_repository
+from src.repositories.trader_repository import TraderRepository
+from src.schemas.trader import ChangeTradersRequest
+from src.routes.base import admin_required, get_user
 from src.db.database import db_generator
-from src.dependencies.base_dependencies import get_jwt_processor
-from src.auth.jwt_processor import JwtProcessor
 from src.celery import create_traders_task, create_usernames_task
 from src.db.models.models import TradersBuffer, UserOrm
-from src.dependencies.dependencies import (
-    get_user_repository,
-)
 from src.entites.trader import LoadTraderAction, TraderWatch
-from src.exceptions import NotPermittedError
-from src.repositories.user_repository import UserRepository
 
 
 router = APIRouter(prefix="", tags=["traders"])
-
-
-async def get_user(
-    request: Request,
-    jwt_processor: JwtProcessor = Depends(get_jwt_processor),
-    user_repository: UserRepository = Depends(get_user_repository),
-) -> UserOrm:
-    token = request.session.get("token")
-    if token:
-        payload = jwt_processor.validate_token(token)
-        if payload:
-            return await user_repository.get(payload["sub"])
-
-    return None
-
-
-def admin_required(func: Callable = None) -> Callable:
-    def wrapper(func: Callable):
-        @wraps(func)
-        async def wrapped_func(*args, user, **kwargs):
-            if user and not user.is_superuser or not user:
-                raise NotPermittedError("у вас нет прав для выполнения запроса")
-            return await func(*args, user=user, **kwargs)
-
-        return wrapped_func
-
-    if func:
-        return wrapper(func)
-    return wrapper
 
 
 async def get_csv_file(
@@ -122,3 +88,12 @@ async def clear_buffer(
     request.session["buffer_size"] = 0
 
     return Response(status_code=200)
+
+
+@router.post("/traders/change", status_code=202)
+async def change_trader(
+    device: DeviceAnnotation,
+    data: ChangeTradersRequest,
+    trader_repository: Annotated[TraderRepository, Depends(get_trader_repository)]
+):
+    await trader_repository.update_many(ids=data.ids, watch=data.watch)

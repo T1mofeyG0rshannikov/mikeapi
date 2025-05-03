@@ -34,35 +34,29 @@ class GetTickersPrices:
         days_count = (today - start_date).days
 
         for ticker in tickers:
-            list_range = list(range(0, days_count+1, 1))
             ticker_deals = await self.deal_repository.filter(start_time=start_date, ticker_id=ticker.id)
             ticker_deals = ticker_deals[::-1]
             ticker_price = None
             ind = 0
-            for i in reversed(list_range):
+            for i in range(0, days_count+1):
                 aware_date = today - timedelta(days=i)
-                if ticker.slug == "RU000A10B1Q6":
-                    print(aware_date)
+                price_exist = await self.ticker_repository.price_exist(ticker_id=ticker.id, date=aware_date)
+                if price_exist:
+                    break
+
                 deal, ind = self.last_deal(ticker_deals, aware_date, ind)
 
                 if deal:
-                    price_exist = await self.ticker_repository.price_exist(ticker_id=ticker.id, date=aware_date)
-                    if not price_exist:
-                        ticker_price = await self.ticker_repository.create_ticker_price(
-                            ticker_id=ticker.id,
-                            price=deal.price,
-                            date=aware_date
-                        )
-                    else:
-                        break
+                    ticker_price = await self.ticker_repository.create_ticker_price(
+                        ticker_id=ticker.id,
+                        price=deal.price,
+                        date=aware_date
+                    )
+
                 else:
                     if ticker_price:
-                        price_exist = await self.ticker_repository.price_exist(ticker_id=ticker.id, date=aware_date)
-                        if not price_exist:
-                            ticker_price = await self.ticker_repository.create_ticker_price(
-                                ticker_id=ticker.id,
-                                price=ticker_price.price,
-                                date=aware_date
-                            )
-                        else:
-                            break
+                        ticker_price = await self.ticker_repository.create_ticker_price(
+                            ticker_id=ticker.id,
+                            price=ticker_price.price,
+                            date=aware_date
+                        )

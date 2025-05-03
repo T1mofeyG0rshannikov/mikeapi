@@ -1,5 +1,5 @@
+from src.repositories.ticker_repository import TickerRepository
 from src.background_tasks.traders_statistics.create_statistics import create_statistics
-from src.background_tasks.traders_statistics.get_latest_trades import get_latest_trades
 from src.entites.ticker import TICKER_TYPES
 from src.db.models.models import DealOrm, SettingsOrm
 from src.repositories.settings_repository import SettingsRepository
@@ -34,11 +34,17 @@ class CreateTraderStatistics:
         self,
         repository: TraderRepository,
         deal_repository: DealRepository,
-        settings_repository: SettingsRepository
+        settings_repository: SettingsRepository,
+        tickers_repository: TickerRepository
     ) -> None:
         self.repository = repository
         self.deal_repository = deal_repository
         self.settings_repository = settings_repository
+        self.tickers_repository = tickers_repository
+
+    async def get_latest_trades(self, date: datetime) -> dict[str, DealOrm]:
+        prices = await self.tickers_repository.get_ticker_price(date=date)
+        return {price.ticker.slug: price.price for price in prices}
 
     async def __call__(self) -> None:
         periods = [
@@ -70,7 +76,7 @@ class CreateTraderStatistics:
         for period in periods:
             await self.repository.delete_statistics(period=period.view)
 
-        last_ticker_deals = await get_latest_trades(yesterday)
+        last_ticker_deals = await self.get_latest_trades(yesterday)
         print("last_ticker_deals")
         print(yesterday)
         print(last_ticker_deals)
@@ -194,7 +200,8 @@ class CreateTraderStatistics:
                         yield_=yield_,
                         gain=gain,
                         tickers=tickers_count,
-                        last_statistics=last_statistics
+                        last_statistics=last_statistics,
+                        repository=self.repository
                     )
 
         print("end statistics")

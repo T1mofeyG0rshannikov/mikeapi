@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, Response
 from src.repositories.ticker_repository import TickerRepository
 from src.db.models.models import UrlEnum
 from src.dependencies.dependencies import (
-    get_app,
+    get_deal_repository,
+    get_device,
     get_is_main_server,
-    get_log_repository,
     get_ping_repository,
     get_server_status,
     get_ticker_repository,
@@ -18,33 +18,33 @@ from src.dependencies.dependencies import (
 )
 from src.entites.deal import TRADE_OPERATIONS
 from src.entites.trader import TraderWatch
-from src.entites.vendor import Device
+from src.entites.device import Device
 from src.exceptions import APIServerError, InvalidCreateLogRequest
 from src.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.deal_repository import DealRepository
 from src.repositories.ping_repository import PingRepository
 from src.repositories.trader_repository import TraderRepository
 from src.schemas.common import APIResponse
-from src.schemas.log import CreateLogRequest
+from src.schemas.deal import CreateDealRequest
 
-router = APIRouter(prefix="", tags=["logs"])
+router = APIRouter(prefix="", tags=["deals"])
 
 
-@router.post("/{api_url}", response_model=APIResponse, tags=["logs"])
-async def create_log(
-    vendor: Annotated[Device, Depends(get_app)],
-    data: CreateLogRequest,
+@router.post("/{api_url}", response_model=APIResponse, tags=["deals"])
+async def create_deal(
+    device: Annotated[Device, Depends(get_device)],
+    data: CreateDealRequest,
     is_main_server: Annotated[bool, Depends(get_is_main_server)],
     server_status: Annotated[UrlEnum, Depends(get_server_status)],
     trader_repository: Annotated[TraderRepository, Depends(get_trader_repository)],
     ping_repository: Annotated[PingRepository, Depends(get_ping_repository)],
     ticker_repository: Annotated[TickerRepository, Depends(get_ticker_repository)],
-    log_repository: Annotated[DealRepository, Depends(get_log_repository)],
+    deal_repository: Annotated[DealRepository, Depends(get_deal_repository)],
 ) -> APIResponse:
-    try:
+    #try:
         if data.action == "ping":
             await ping_repository.create(
-                app_id=vendor.id,
+                app_id=device.id,
             )
             return APIResponse(
                 status="ok",
@@ -86,11 +86,11 @@ async def create_log(
                 code = generate_code()
                 ind = get_code_index(exist_codes, code)
 
-            user = await trader_repository.create(username=username, code=code, watch=TraderWatch.on, app_id=vendor.id)
+            user = await trader_repository.create(username=username, code=code, watch=TraderWatch.on, app_id=device.id)
         else:
             if user.watch != TraderWatch.on:
                 user.watch = TraderWatch.on
-                user.app_id = vendor.id
+                user.app_id = device.id
                 user = await trader_repository.update(user)
 
         moscow_tz = pytz.timezone("Europe/Moscow")
@@ -98,8 +98,8 @@ async def create_log(
         local_time = moscow_tz.localize(datetime.strptime(data.time, "%d:%m:%Y.%H:%M:%S"))
         moscow_time = local_time.astimezone(source_tz)
 
-        await log_repository.create(
-            app_id=vendor.id,
+        await deal_repository.create(
+            app_id=device.id,
             time=moscow_time,
             main_server=is_main_server,
             user=user,
@@ -111,5 +111,5 @@ async def create_log(
         return APIResponse(
             status="ok",
         )
-    except:
-        raise APIServerError("Что-то пошло не так")
+    #except:
+    #    raise APIServerError("Что-то пошло не так")

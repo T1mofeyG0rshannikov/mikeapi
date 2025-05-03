@@ -21,14 +21,14 @@ class CreateTraders:
         traders = await self.traders_repository.filter_by_usernames(traders_names)
         traders = sorted(traders, key=lambda t: t.username)
 
-        for ind, trader in enumerate(traders):
-            trader.status = traders_data[ind].status
-            trader.subscribes = traders_data[ind].subscribes
-            trader.subscribers = traders_data[ind].subscribers
-            trader.portfolio = traders_data[ind].portfolio
-            trader.trades = traders_data[ind].trades
-            trader.profit = traders_data[ind].profit
-            trader.badges = traders_data[ind].badges
+        for trader_data, trader in zip(traders_data, traders):
+            trader.status = trader_data.status
+            trader.subscribes = trader_data.subscribes
+            trader.subscribers = trader_data.subscribers
+            trader.portfolio = trader_data.portfolio
+            trader.trades = trader_data.trades
+            trader.profit = trader_data.profit
+            trader.badges = trader_data.badges
 
             if trader.watch == TraderWatch.pre:
                 trader.last_update = datetime.utcnow()

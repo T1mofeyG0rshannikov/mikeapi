@@ -8,10 +8,10 @@ def init_scheduler() -> None:
     timezone = pytz.timezone("Europe/Moscow")
     scheduler = AsyncIOScheduler(timezone=timezone)
 
-    scheduler.add_job(deals_activity, "cron", minute="*")
+    '''scheduler.add_job(deals_activity, "cron", minute="*")
     scheduler.add_job(tickers_activity, "cron", minute="*")
     scheduler.add_job(check_server, "cron", minute="*")
     scheduler.add_job(trader_activity, "cron", minute="*")
-    scheduler.add_job(ticker_prices, "cron", minute="*")
+    scheduler.add_job(ticker_prices, "cron", minute="*")'''
 
     scheduler.start()
