@@ -275,6 +275,8 @@ class SettingsOrm(Model):
     count_bonds = Column(Boolean, server_default=literal(False))
     count_private_stocks = Column(Boolean, server_default=literal(False))
 
+    package_max_signals = Column(Integer, default=100)
+
 
 class PingOrm(Model):
     __tablename__ = "pings"

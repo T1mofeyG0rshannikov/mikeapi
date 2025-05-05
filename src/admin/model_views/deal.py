@@ -56,6 +56,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
         DealOrm.closed
     ]
 
+
     def get_dynamic_list_columns(self, request: Request) -> List[str]:
         """Get list of properties to display in List page."""
 
@@ -139,17 +140,14 @@ class DealAdmin(BaseModelView, model=DealOrm):
             delayed = delayed == "true"
 
         filters = and_()
+        db = Session()
+        settings = db.execute(select(SettingsOrm)).scalar()
         if delayed:
-            db = Session()            
-            settings = db.execute(select(SettingsOrm)).scalar()
-
             filters &= and_(
                 func.extract('epoch', DealOrm.created_at) - func.extract('epoch', DealOrm.time) >= settings.log_delay
             )
 
         if trader_id:
-            db=Session()
-            settings = db.execute(select(SettingsOrm)).scalar()
             ticker_types = get_selected_ticker_types(settings)
             filters &= and_(DealOrm.user_id==int(trader_id))
             filters &= and_(TickerOrm.type.in_(ticker_types))
@@ -185,6 +183,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
         page_size = min(page_size or self.page_size, max(self.page_size_options))
 
         stmt = self.list_query(request).filter(self.filters_from_request(request))
+
         if trader_id:
             stmt = stmt.options(joinedload(DealOrm.end_deal).selectinload(DealOrm.ticker))
             stmt = stmt.options(joinedload(DealOrm.subordinates).selectinload(DealOrm.ticker))
@@ -192,15 +191,15 @@ class DealAdmin(BaseModelView, model=DealOrm):
             stmt = stmt.options(selectinload(relation))
         stmt = stmt.join(TickerOrm)
 
-
         stmt = self.sort_query(stmt, request)
 
         count = await self.count(request, select(func.count()).select_from(stmt))
-
-        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
-        rows = await self._run_query(stmt)
         
-        db = Session()            
+        stmt = stmt.limit(page_size).offset((page - 1) * page_size)
+     
+        rows = await self._run_query(stmt)
+
+        db = Session()
         settings = db.execute(select(SettingsOrm)).scalar()
 
         for row in rows:
@@ -211,7 +210,7 @@ class DealAdmin(BaseModelView, model=DealOrm):
                         "%d.%m.%Y %H:%M:%S"
                     )
                     row.end_deal.time_f = row.end_deal.time.astimezone(pytz.timezone("Europe/Moscow")).strftime("%d.%m.%Y %H:%M:%S")
-                #row.ticker_lot = row.ticker.lot if row.ticker.lot else 1
+
                 row.summ = format_sum(row.price * row.ticker_lot)
 
         pagination = Pagination(

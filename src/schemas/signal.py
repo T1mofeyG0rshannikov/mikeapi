@@ -10,6 +10,7 @@ class SignalsResponse(BaseModel):
     package: int
     count: int
     signals: List[str]
+    more_signals_count: int
 
 
 class GetSignalsRequest(DeviceRequest):
