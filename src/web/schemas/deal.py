@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import validator
 
-from src.schemas.common import DeviceRequest
+from src.web.schemas.common import DeviceRequest
 from src.exceptions import InvalidCreateLogRequest
 
 

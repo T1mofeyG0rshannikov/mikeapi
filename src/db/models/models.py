@@ -226,16 +226,20 @@ class TickerOrm(Model):
     is_active = Column(Boolean, server_default=expression.true())
 
     @hybrid_property
-    def rare(self, db=Session()) -> bool:
-        settings = db.execute(select(SettingsOrm).limit(1)).scalar()
+    def rare(self) -> bool:
+        db = Session()
+        settings = db.execute(select(SettingsOrm)).scalar()
+
         if not settings:
             return False
 
         return self.last_month < settings.rare_tickers_limit
 
     @rare.expression
-    def rare(self, db=Session()):
-        settings = db.execute(select(SettingsOrm).limit(1)).scalar()
+    def rare(self):
+        db = Session()
+        settings = db.execute(select(SettingsOrm)).scalar()
+
         if not settings:
             return False
 

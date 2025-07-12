@@ -2,10 +2,10 @@ from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 
 from src.dependencies.repos_container import ReposContainer
-from src.auth.jwt_processor import JwtProcessor
-from src.password_hasher import PasswordHasher
+from src.user.auth.jwt_processor import JwtProcessor
+from src.user.password_hasher import PasswordHasher
 from src.admin.config import AdminConfig
-from src.schemas.login import LoginResponse
+from src.web.schemas.login import LoginResponse
 
 
 class AdminAuth(AuthenticationBackend):    

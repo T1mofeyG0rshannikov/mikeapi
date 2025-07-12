@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from src.schemas.ticker import ChangeTickersRequest
+from src.web.schemas.ticker import ChangeTickersRequest
 from src.repositories.ticker_repository import TickerRepository
 from src.dependencies.dependencies import get_ticker_repository
 

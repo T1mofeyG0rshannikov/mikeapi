@@ -2,6 +2,7 @@ from fastapi import Request
 from markupsafe import Markup
 
 
+from src.db.get_settings import get_settings
 from src.admin.model_views.base import BaseModelView
 from src.admin.forms import TickerForm
 from src.db.models.models import TickerOrm
@@ -99,9 +100,10 @@ class TickerAdmin(BaseModelView, model=TickerOrm):
         if archive:
             archive = archive == "true"
 
+        settings = get_settings()
         filters = and_()
         filters &= and_(TickerOrm.archive == archive)
-        filters &= and_(TickerOrm.rare == rare)
+        filters &= and_(TickerOrm.last_month < settings.rare_tickers_limit)
         
         if type:
             filters &= and_(TickerOrm.type == type)

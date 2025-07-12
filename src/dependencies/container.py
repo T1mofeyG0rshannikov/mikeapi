@@ -10,10 +10,10 @@ from src.messaging.sms_sender.sender import SMSSender
 from src.messaging.telegram_sender.config import TelegramSenderConfig
 from src.background_tasks.check_server import CheckServer
 from src.background_tasks.check_server_config import CheckServerConfig
-from src.alerts_service.config import AlertsServiceConfig
+from src.messaging.alerts_service.config import AlertsServiceConfig
 from src.background_tasks.check_server_available import CheckServerActivity
 from src.dependencies.base_dependencies import get_redis
-from src.alerts_service.service import AlertsService
+from src.messaging.alerts_service.service import AlertsService
 from src.usecases.create_usernames import AddUsernames
 from src.usecases.create_traders.create_traders import CreateTraders
 

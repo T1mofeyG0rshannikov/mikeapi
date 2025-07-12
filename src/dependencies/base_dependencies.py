@@ -3,10 +3,10 @@ from functools import lru_cache
 from src.admin.config import AdminConfig
 from src.background_tasks.check_server_config import CheckServerConfig
 from redis import Redis
-from src.redis.conf import RedisConfig
-from src.auth.jwt_config import JwtConfig
-from src.auth.jwt_processor import JwtProcessor
-from src.password_hasher import PasswordHasher
+from src.background_tasks.redis.conf import RedisConfig
+from src.user.auth.jwt_config import JwtConfig
+from src.user.auth.jwt_processor import JwtProcessor
+from src.user.password_hasher import PasswordHasher
 
 
 @lru_cache

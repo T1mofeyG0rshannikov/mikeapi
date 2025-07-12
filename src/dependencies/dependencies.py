@@ -15,7 +15,7 @@ from src.repositories.ping_repository import PingRepository
 from src.repositories.trader_repository import TraderRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.vendor_repository import DeviceRepository
-from src.schemas.common import DeviceRequest
+from src.web.schemas.common import DeviceRequest
 
 
 def get_user_repository(db: AsyncSession = Depends(db_generator)) -> UserRepository:

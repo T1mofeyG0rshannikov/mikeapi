@@ -6,7 +6,7 @@ from dependencies.decorator import inject_dependencies
 from src.repositories.user_repository import UserRepository
 from src.dependencies.repos_container import ReposContainer
 from src.dependencies.base_dependencies import get_password_hasher
-from src.password_hasher import PasswordHasher
+from mikeapi.src.user.password_hasher import PasswordHasher
 
 
 @inject_dependencies

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from src.db.models.models import TraderOrm
 from src.entites.trader import TraderWatch
-from src.generate_user_code import code_exists, generate_code, get_code_index
+from src.user.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
 from src.usecases.create_traders.traders_from_csv import traders_data_from_csv
 

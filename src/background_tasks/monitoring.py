@@ -10,11 +10,11 @@ async def job() -> None:
     await check_server_activity()
 
 
-def test():
+def check_server_activity():
     print(time.time())
     asyncio.get_event_loop().run_until_complete(job())
 
-schedule.every(1).minutes.do(test)
+schedule.every(1).minutes.do(check_server_activity)
 
 while True:
     schedule.run_pending()

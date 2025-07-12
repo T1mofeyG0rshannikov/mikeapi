@@ -46,7 +46,7 @@ class SignalRepository(BaseRepository):
         if end_time:
             filters &= and_(DealOrm.time <= end_time)
         
-        count = await self.db.execute(select(func.count(DealOrm.id)).where(filters))
+        count = await self.db.execute(select(func.count(DealOrm.id)).join(TickerOrm).join(TraderOrm).where(filters))
         return count.scalar_one()
     
     async def update_many(self, ids: list[int], adopted: bool, adopted_device: DeviceOrm):

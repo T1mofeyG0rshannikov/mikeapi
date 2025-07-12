@@ -15,7 +15,7 @@ from src.admin.model_views.ping import PingAdmin
 from src.admin.model_views.ticker import TickerAdmin
 from src.admin.model_views.deal import DealAdmin
 from src.admin.model_views.trader import TraderAdmin
-from src.admin.views import (
+from src.admin.model_views.views import (
     APIUrlsAdmin,
     LogActivityAdmin,
     SettingsAdmin,

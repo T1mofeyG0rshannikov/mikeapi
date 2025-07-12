@@ -3,7 +3,7 @@ from src.messaging.sms_sender.sender import SMSSender
 from src.messaging.telegram_sender.sender import TelegramSender
 from src.repositories.server_log_repositrory import ServerLogRepository
 from src.repositories.ping_repository import PingRepository
-from src.alerts_service.service import AlertsService
+from src.messaging.alerts_service.service import AlertsService
 from src.entites.contacts import ContactChannel
 from src.repositories.vendor_repository import DeviceRepository
 from src.entites.alert import AlertChannels

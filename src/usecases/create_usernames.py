@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from src.repositories.vendor_repository import DeviceRepository
 from src.db.models.models import TraderOrm, DeviceOrm
 from src.entites.trader import LoadTraderAction, TraderStatus, TraderWatch
-from src.generate_user_code import code_exists, generate_code, get_code_index
+from src.user.generate_user_code import code_exists, generate_code, get_code_index
 from src.repositories.trader_repository import TraderRepository
 
 

@@ -7,7 +7,7 @@ from fastapi import Depends
 from starlette.requests import Request
 
 from src.dependencies.base_dependencies import get_jwt_processor
-from src.auth.jwt_processor import JwtProcessor
+from src.user.auth.jwt_processor import JwtProcessor
 from src.db.models.models import UserOrm
 from src.dependencies.dependencies import (
     get_user_repository,

@@ -2,14 +2,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from src.get_settings import get_settings
+from src.db.get_settings import get_settings
 from src.entites.device import Device
 from src.db.mappers.signal import from_orm_to_signal
 from src.repositories.signal_repository import SignalRepository
-from src.schemas.signal import SignalsResponse
+from src.web.schemas.signal import SignalsResponse
 from src.dependencies.dependencies import get_device_get, get_signal_repository
 from src.exceptions import ObjectNotFound
-from src.validate import validate_time
+from src.web.validate_time import validate_time
 
 router = APIRouter(prefix="/signals", tags=["signals"])
 
@@ -23,25 +23,10 @@ async def get_signals(
     start_time: str | None = None,
     end_time: str | None = None
 ) -> SignalsResponse:
-    if start_time:
-        start_time = validate_time(start_time)
-    else:
-        start_time = None
-
-    if end_time:
-        end_time = validate_time(end_time)
-    else:
-        end_time = None
-
-    if tickers:
-        tickers = tickers.split(",")
-    else:
-        tickers = []
-
-    if inds:
-        inds = inds.split(",")
-    else:
-        inds = []
+    start_time = validate_time(start_time) if start_time else None
+    end_time = validate_time(end_time) if end_time else None
+    tickers = tickers.split(",") if tickers else []
+    inds = inds.split(",") if inds else []
 
     settings = get_settings()
 

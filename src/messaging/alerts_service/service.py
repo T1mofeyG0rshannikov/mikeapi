@@ -1,4 +1,4 @@
-from src.alerts_service.config import AlertsServiceConfig
+from src.messaging.alerts_service.config import AlertsServiceConfig
 from redis import Redis
 
 

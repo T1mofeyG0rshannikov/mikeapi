@@ -1,4 +1,4 @@
-from src.schemas.common import DeviceRequest
+from src.web.schemas.common import DeviceRequest
 
 
 class ChangeTickersRequest(DeviceRequest):

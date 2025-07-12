@@ -11,6 +11,6 @@ class AlertsServiceConfig(BaseSettings):
     SECOND_SEND_PINGS: str = "second_send_pings"
     PULLED_UP_PINGS: str = "pulled_up_pings"
 
-    #class Config:
-    #    env_file = ".env"
-    #    extra = "allow"
+    class Config:
+        env_file = ".env"
+        extra = "allow"

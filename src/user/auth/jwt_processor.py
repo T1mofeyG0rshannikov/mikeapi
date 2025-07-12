@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from jose import JWTError, jwt
 
-from src.auth.jwt_config import JwtConfig
+from src.user.auth.jwt_config import JwtConfig
 
 
 class JwtProcessor:

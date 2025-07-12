@@ -9,10 +9,10 @@ from starlette.requests import Request
 
 from src.dependencies.dependencies import DeviceAnnotation, get_trader_repository
 from src.repositories.trader_repository import TraderRepository
-from src.schemas.trader import ChangeTradersRequest
-from src.routes.base import admin_required, get_user
+from src.web.schemas.trader import ChangeTradersRequest
+from src.web.routes.base import admin_required, get_user
 from src.db.database import db_generator
-from src.celery import create_traders_task, create_usernames_task
+from src.background_tasks.celery import create_traders_task, create_usernames_task
 from src.db.models.models import TradersBuffer, UserOrm
 from src.entites.trader import LoadTraderAction, TraderWatch
 
